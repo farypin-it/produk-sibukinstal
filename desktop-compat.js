@@ -187,6 +187,32 @@ if (IS_DESKTOP) {
     if (typeof updateOnlineStatus === 'function') updateOnlineStatus();
   });
 
+  document.addEventListener('HtmlIncludesLoaded', async function () {
+    if (window.electronAPI && window.electronAPI.getOfflineConfig) {
+        try {
+            const config = await window.electronAPI.getOfflineConfig();
+            if (config) {
+                const adminInput = document.getElementById('adminUser');
+                const wakaInput = document.getElementById('guruUser');
+                
+                if (adminInput && config.admin) {
+                    adminInput.value = config.admin.username || '';
+                    adminInput.setAttribute('readonly', 'true');
+                    adminInput.title = 'Diambil dari config-offline.js';
+                }
+                
+                if (wakaInput && config.waka) {
+                    wakaInput.value = config.waka.username || '';
+                    wakaInput.setAttribute('readonly', 'true');
+                    wakaInput.title = 'Diambil dari config-offline.js';
+                }
+            }
+        } catch(e) {
+            console.error('Gagal mengambil config offline:', e);
+        }
+    }
+  });
+
   // Ekspor ke window
   window.doSinkronisasi = doSinkronisasi;
   window.updateSyncBadge = updateSyncBadge;
