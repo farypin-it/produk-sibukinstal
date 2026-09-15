@@ -479,6 +479,17 @@ function loadSettings() {
         $('#setTheme2').val(s.theme_color_2 || '#224abe');
         $('#setTheme3').val(s.theme_color_3 || '#1a202c');
         $('#setOpd').val(s.opd_dinas || ''); $('#setTelp').val(s.telp_sekolah || ''); $('#setEmail').val(s.email_sekolah || ''); $('#setWeb').val(s.web_sekolah || '');
+        
+        // Populate and lock username fields based on online settings
+        const admU = s.username_admin || s.admin_user || s.adminUser || s.admin_username;
+        if (admU) {
+            $('#adminUser').val(admU).attr('readonly', true).attr('title', 'Username dari Spreadsheet');
+        }
+        const wakaU = s.username_waka || s.waka_user || s.wakaUser || s.waka_username || s.guruUser || s.username_guru;
+        if (wakaU) {
+            $('#guruUser').val(wakaU).attr('readonly', true).attr('title', 'Username dari Spreadsheet');
+        }
+
         if (s.logo_instansi) callAPI('getImage', { id: s.logo_instansi }).then(b => { if (b) { $('#loginLogoInstansi').attr('src', b).removeClass('hidden'); $('#prevLogoInstansi').attr('src', b).removeClass('hidden'); $('#dashLogoInstansi').attr('src', b).removeClass('hidden'); } });
         $('#logo_instansi').val(s.logo_instansi);
 
