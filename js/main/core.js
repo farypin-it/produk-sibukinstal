@@ -153,11 +153,16 @@ async function callAPI(actionName, payloadData = {}) {
 
     // ===== MODE ONLINE (Browser — Google Apps Script) ATAU FALLBACK DESKTOP =====
     try {
+        window.memoryImgCache = window.memoryImgCache || {};
         if (actionName === 'getImage' && payloadData && payloadData.id) {
-            if (String(payloadData.id).startsWith('data:')) return payloadData.id;
-            // Removed lh3.googleusercontent.com shortcut due to Google blocking it. Will fetch base64 from GAS instead.
+            let imgId = String(payloadData.id);
+            if (imgId.startsWith('data:')) return imgId;
+            if (imgId.startsWith('http')) return imgId; // Already a URL
+            
+            // CACHING SEMENTARA (HANYA SELAMA HALAMAN DIBUKA)
+            if (window.memoryImgCache[imgId]) return window.memoryImgCache[imgId];
         }
-        let session = localStorage.getItem(`simisterbin_session_${tenantId}`);
+        let session = localStorage.getItem(`simisterbin_session_${typeof tenantId !== 'undefined' ? tenantId : 'demo'}`);
         let tokenAman = "";
         let userAktif = "";
 
@@ -185,7 +190,12 @@ async function callAPI(actionName, payloadData = {}) {
         try {
             resData = JSON.parse(resText);
         } catch (_) {
-            if (actionName === 'getImage') return resText; // Return base64 string directly
+            if (actionName === 'getImage') {
+                if (resText.length > 50 && !resText.includes('<html')) { // Pastikan bukan halaman error
+                    window.memoryImgCache[payloadData.id] = resText;
+                }
+                return resText; // Return base64 string directly
+            }
             // Server mengembalikan bukan JSON (mungkin timeout/error GAS)
             console.error('[DESKTOP] API Error: Response bukan JSON:', resText);
             const cleanText = resText ? resText.trim() : '';
