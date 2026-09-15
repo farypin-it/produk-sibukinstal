@@ -18,9 +18,10 @@ document.addEventListener('HtmlIncludesLoaded', async function () {
                     let decodedData = JSON.parse(dekripsiLokal(session));
                     await restoreSession(decodedData);
                 } catch (e) {
-                    localStorage.removeItem(`simisterbin_session_${tenantId}`);
-                    $('#boxLinkExec').removeClass('hidden');
-                    $('#boxForcePush').removeClass('hidden');
+                    if (IS_DESKTOP) {
+                        $('#boxLinkExec').removeClass('hidden');
+                        $('#boxForcePush').removeClass('hidden');
+                    }
                     $('#loginPage').removeClass('hidden');
                     $('#yearLogin').text(new Date().getFullYear());
                     $('#loader').addClass('hidden'); // MATIKAN LOADING
@@ -508,18 +509,12 @@ function loadSettings() {
 
         $('#background_login').val(s.background_login);
         if (s.background_login) callAPI('getImage', { id: s.background_login }).then(b => { if (b) { $('#prev_bg_login').attr('src', b).removeClass('hidden'); bgLoginUrl = 'url(' + b + ')'; applyLoginPageBackground(); } });
-        
-        $('#boxLinkExec').removeClass('hidden');
-        $('#boxForcePush').removeClass('hidden');
-        if (s.link_exec) {
-            $('#inputLinkExec').val(s.link_exec);
-        }
-
-        // NEW: Load Link Exec if offline
         if (IS_DESKTOP) {
+            $('#boxLinkExec').removeClass('hidden');
+            $('#boxForcePush').removeClass('hidden');
             callAPI('getOfflineConfig').then(res => {
                 if (res && res.status === 'success' && res.data && res.data.linkExec) {
-                    $('#inputLinkExec').val(res.data.linkExec);
+                    $('#inputLinkExec').val(res.data.linkExec).attr('readonly', true);
                 }
             });
         }
