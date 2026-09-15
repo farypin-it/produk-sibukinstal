@@ -481,14 +481,16 @@ function loadSettings() {
         $('#setOpd').val(s.opd_dinas || ''); $('#setTelp').val(s.telp_sekolah || ''); $('#setEmail').val(s.email_sekolah || ''); $('#setWeb').val(s.web_sekolah || '');
         
         // Populate and lock username fields based on online settings
-        const admU = s.username_admin || s.admin_user || s.adminUser || s.admin_username;
-        if (admU) {
-            $('#adminUser').val(admU).attr('readonly', true).attr('title', 'Username dari Spreadsheet');
-        }
-        const wakaU = s.username_waka || s.waka_user || s.wakaUser || s.waka_username || s.guruUser || s.username_guru;
-        if (wakaU) {
-            $('#guruUser').val(wakaU).attr('readonly', true).attr('title', 'Username dari Spreadsheet');
-        }
+        const admU = s.username_admin || s.admin_user || s.adminUser || s.admin_username || s.user_admin || s.useradmin || s.adminusername;
+        let sessionData = null;
+        try { sessionData = JSON.parse(dekripsiLokal(localStorage.getItem(`simisterbin_session_${typeof tenantId !== 'undefined' ? tenantId : 'demo'}`))); } catch(e){}
+        
+        const finalAdmU = admU || (sessionData && sessionData.role === 'admin' ? sessionData.username : '');
+        $('#adminUser').val(finalAdmU).attr('readonly', true).attr('title', 'Username Admin (Readonly)');
+        
+        const wakaU = s.username_waka || s.waka_user || s.wakaUser || s.waka_username || s.guruUser || s.username_guru || s.user_waka || s.userwaka;
+        const finalWakaU = wakaU || (sessionData && sessionData.role === 'wakakurikulum' ? sessionData.username : '');
+        $('#guruUser').val(finalWakaU).attr('readonly', true).attr('title', 'Username Waka (Readonly)');
 
         if (s.logo_instansi) callAPI('getImage', { id: s.logo_instansi }).then(b => { if (b) { $('#loginLogoInstansi').attr('src', b).removeClass('hidden'); $('#prevLogoInstansi').attr('src', b).removeClass('hidden'); $('#dashLogoInstansi').attr('src', b).removeClass('hidden'); } });
         $('#logo_instansi').val(s.logo_instansi);
