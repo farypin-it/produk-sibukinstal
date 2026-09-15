@@ -4,7 +4,7 @@
 
 // 1. Buat "Buku Alamat" untuk masing-masing sekolah
 const tenantConfig = {
-    "demo": "https://script.google.com/macros/s/AKfycbyXSl1SqH5nJOgVd9eBJluEoRx2Ka2oaFagoxxtrmqeWNtXJqbmqWsa5uJYF7Yx0Hon/exec",
+    "demo": "https://script.google.com/macros/s/AKfycbwcPEI8l8wfimuk7mtKOV8Ac6E7hKxpFFsKDV74klmQNmfXo7fQMgiA9JUdb2F4rMQ6/exec",
     "smkn1kotaternate": "https://script.google.com/macros/s/AKfycbwcPEI8l8wfimuk7mtKOV8Ac6E7hKxpFFsKDV74klmQNmfXo7fQMgiA9JUdb2F4rMQ6/exec",
     "sman2tebo": "https://.../exec",
     "smk2": "https://script.google.com/macros/s/ID_API_SEKOLAH_3/exec"
@@ -157,7 +157,7 @@ async function callAPI(actionName, payloadData = {}) {
             if (String(payloadData.id).startsWith('data:')) return payloadData.id;
             // Removed lh3.googleusercontent.com shortcut due to Google blocking it. Will fetch base64 from GAS instead.
         }
-        let session = localStorage.getItem('simisterbin_session');
+        let session = localStorage.getItem(`simisterbin_session_${tenantId}`);
         let tokenAman = "";
         let userAktif = "";
 
@@ -195,7 +195,7 @@ async function callAPI(actionName, payloadData = {}) {
 
         // --- DEKRIPSI OTOMATIS DATA SENSITIF ONLINE DIHAPUS KARENA SUDAH DI-HANDLE BACKEND ---
         if (resData && resData.status === 'expired') {
-            localStorage.removeItem('simisterbin_session');
+            localStorage.removeItem(`simisterbin_session_${tenantId}`);
             showCoolAlert('Sesi Berakhir', resData.message || 'Sesi Anda telah berakhir, silakan login ulang.', 'warning');
             setTimeout(() => location.reload(), 2000);
             return { status: 'error', message: 'Sesi berakhir.' };
@@ -222,7 +222,7 @@ function doLogin(e) {
                 password: $('#p').val(),
                 data: res.data || null
             });
-            localStorage.setItem('simisterbin_session', enkripsiLokal(rawData));
+            localStorage.setItem(`simisterbin_session_${tenantId}`, enkripsiLokal(rawData));
 
             restoreSession(res);
         } else {
