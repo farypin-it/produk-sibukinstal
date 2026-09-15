@@ -450,8 +450,8 @@ function updateAccount(e, role) {
     });
 }
 
-function loadSettings() {
-    return callAPI('getSettings').then(s => {
+async function loadSettings() {
+    return callAPI('getSettings').then(async s => {
         globalConf = s;
 
         if (s.theme_color_1) document.documentElement.style.setProperty('--theme-color-1', s.theme_color_1);
@@ -493,22 +493,46 @@ function loadSettings() {
         const finalWakaU = wakaU || (sessionData && sessionData.role === 'wakakurikulum' ? sessionData.username : '');
         $('#guruUser').val(finalWakaU).attr('readonly', true).attr('title', 'Username Waka (Readonly)');
 
-        if (s.logo_instansi) callAPI('getImage', { id: s.logo_instansi }).then(b => { if (b) { $('#loginLogoInstansi').attr('src', b).removeClass('hidden'); $('#prevLogoInstansi').attr('src', b).removeClass('hidden'); $('#dashLogoInstansi').attr('src', b).removeClass('hidden'); } });
-        $('#logo_instansi').val(s.logo_instansi);
+        // --- OPTIMIZATION: Ambil gambar satu per satu (sekuensial) agar server GAS tidak error karena overload request ---
+        if (s.logo_instansi) {
+            $('#logo_instansi').val(s.logo_instansi);
+            let b = await callAPI('getImage', { id: s.logo_instansi });
+            if (b) {
+                $('#loginLogoInstansi, #prevLogoInstansi, #dashLogoInstansi, #headerLogoInstansi').attr('src', b).removeClass('hidden');
+            }
+        }
+        
+        if (s.logo_sekolah) {
+            $('#logo_sekolah').val(s.logo_sekolah);
+            let b = await callAPI('getImage', { id: s.logo_sekolah });
+            if (b) {
+                $('#loginLogoSekolah, #prevLogoSekolah, #dashLogoSekolah, #headerLogoSekolah').attr('src', b).removeClass('hidden');
+            }
+        }
 
-        if (s.logo_sekolah) callAPI('getImage', { id: s.logo_sekolah }).then(b => { if (b) { $('#loginLogoSekolah').attr('src', b).removeClass('hidden'); $('#prevLogoSekolah').attr('src', b).removeClass('hidden'); $('#dashLogoSekolah').attr('src', b).removeClass('hidden'); } });
-        $('#logo_sekolah').val(s.logo_sekolah);
         // --- FIX: UPDATE HEADER SISWA SETELAH DATA TIBA ---
         $('#headerInstansi').text(s.nama_instansi || 'DINAS PENDIDIKAN');
         $('#headerSekolah').text(s.nama_sekolah || 'NAMA SEKOLAH');
-        if (s.logo_instansi) callAPI('getImage', { id: s.logo_instansi }).then(b => { if (b) $('#headerLogoInstansi').attr('src', b).removeClass('hidden'); });
-        if (s.logo_sekolah) callAPI('getImage', { id: s.logo_sekolah }).then(b => { if (b) $('#headerLogoSekolah').attr('src', b).removeClass('hidden'); });
 
-        $('#background_landing').val(s.background_landing);
-        if (s.background_landing) callAPI('getImage', { id: s.background_landing }).then(b => { if (b) { $('#prev_bg_landing').attr('src', b).removeClass('hidden'); bgLandingUrl = 'url(' + b + ')'; applyLoginPageBackground(); } });
+        if (s.background_landing) {
+            $('#background_landing').val(s.background_landing);
+            let b = await callAPI('getImage', { id: s.background_landing });
+            if (b) {
+                $('#prev_bg_landing').attr('src', b).removeClass('hidden'); 
+                bgLandingUrl = 'url(' + b + ')'; 
+                applyLoginPageBackground();
+            }
+        }
 
-        $('#background_login').val(s.background_login);
-        if (s.background_login) callAPI('getImage', { id: s.background_login }).then(b => { if (b) { $('#prev_bg_login').attr('src', b).removeClass('hidden'); bgLoginUrl = 'url(' + b + ')'; applyLoginPageBackground(); } });
+        if (s.background_login) {
+            $('#background_login').val(s.background_login);
+            let b = await callAPI('getImage', { id: s.background_login });
+            if (b) {
+                $('#prev_bg_login').attr('src', b).removeClass('hidden'); 
+                bgLoginUrl = 'url(' + b + ')'; 
+                applyLoginPageBackground();
+            }
+        }
         if (IS_DESKTOP) {
             $('#boxLinkExec').removeClass('hidden');
             $('#boxForcePush').removeClass('hidden');
