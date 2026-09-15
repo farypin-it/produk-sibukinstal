@@ -111,7 +111,7 @@ if (IS_DESKTOP) {
     setTimeout(() => updateStep(5, '🔄', 'Download data terbaru...'), 4000);
 
     try {
-      const sessionRaw = localStorage.getItem('simisterbin_session');
+      const sessionRaw = localStorage.getItem(`simisterbin_session_${typeof tenantId !== 'undefined' ? tenantId : 'demo'}`);
       let sessionData = null;
       try { sessionData = sessionRaw ? JSON.parse(dekripsiLokal(sessionRaw)) : null; } catch (_) {}
       if (!sessionData || !sessionData.username || !sessionData.password) {
@@ -166,7 +166,7 @@ if (IS_DESKTOP) {
             const retryResult = await window.electronAPI.syncToServer(apiUrl, retry.value);
             if (retryResult.status === 'success' || retryResult.status === 'partial') {
               const updatedSession = { ...(sessionData || {}), username: retry.value.username, password: retry.value.password };
-              localStorage.setItem('simisterbin_session', enkripsiLokal(JSON.stringify(updatedSession)));
+              localStorage.setItem(`simisterbin_session_${typeof tenantId !== 'undefined' ? tenantId : 'demo'}`, enkripsiLokal(JSON.stringify(updatedSession)));
               Swal.fire(retryResult.status === 'partial' ? 'Sinkronisasi Sebagian' : 'Sinkronisasi Berhasil', retryResult.message || 'Sinkronisasi selesai.', retryResult.status === 'partial' ? 'warning' : 'success');
             } else {
               Swal.fire('Login Server Gagal', retryResult.message, 'error');
@@ -259,7 +259,7 @@ if (IS_DESKTOP) {
     
     if (!confirm.isConfirmed) return;
 
-    const sessionRaw = localStorage.getItem('simisterbin_session');
+    const sessionRaw = localStorage.getItem(`simisterbin_session_${typeof tenantId !== 'undefined' ? tenantId : 'demo'}`);
     let sessionData = null;
     try { sessionData = sessionRaw ? JSON.parse(dekripsiLokal(sessionRaw)) : null; } catch (_) {}
     const credentials = sessionData && sessionData.username && sessionData.password
@@ -317,7 +317,7 @@ if (IS_DESKTOP) {
             const retryResult = await window.electronAPI.forcePushOnline(apiUrl, retry.value);
             if (retryResult.status === 'success' || retryResult.status === 'partial') {
               const updatedSession = { ...(sessionData || {}), username: retry.value.username, password: retry.value.password };
-              localStorage.setItem('simisterbin_session', enkripsiLokal(JSON.stringify(updatedSession)));
+              localStorage.setItem(`simisterbin_session_${typeof tenantId !== 'undefined' ? tenantId : 'demo'}`, enkripsiLokal(JSON.stringify(updatedSession)));
               Swal.fire(retryResult.status === 'partial' ? 'Sebagian Berhasil' : 'Berhasil!', retryResult.message, retryResult.status === 'partial' ? 'warning' : 'success');
             } else {
               Swal.fire('Login Server Gagal', retryResult.message, 'error');
