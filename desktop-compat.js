@@ -193,18 +193,30 @@ if (IS_DESKTOP) {
             const config = await window.electronAPI.getOfflineConfig();
             if (config) {
                 const adminInput = document.getElementById('adminUser');
+                const adminPassInput = document.getElementById('adminPass');
                 const wakaInput = document.getElementById('guruUser');
+                const wakaPassInput = document.getElementById('guruPass');
                 
                 if (adminInput && config.admin) {
                     adminInput.value = config.admin.username || '';
                     adminInput.setAttribute('readonly', 'true');
                     adminInput.title = 'Diambil dari config-offline.js';
                 }
+                if (adminPassInput && config.admin) {
+                    adminPassInput.value = config.admin.password || '';
+                    adminPassInput.setAttribute('readonly', 'true');
+                    adminPassInput.title = 'Diambil dari config-offline.js';
+                }
                 
                 if (wakaInput && config.waka) {
                     wakaInput.value = config.waka.username || '';
                     wakaInput.setAttribute('readonly', 'true');
                     wakaInput.title = 'Diambil dari config-offline.js';
+                }
+                if (wakaPassInput && config.waka) {
+                    wakaPassInput.value = config.waka.password || '';
+                    wakaPassInput.setAttribute('readonly', 'true');
+                    wakaPassInput.title = 'Diambil dari config-offline.js';
                 }
             }
         } catch(e) {
