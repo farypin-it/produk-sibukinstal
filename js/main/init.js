@@ -12,13 +12,13 @@ document.addEventListener('HtmlIncludesLoaded', async function () {
             await loadSettings();
 
             // CEK SESI LOGIN
-            let session = localStorage.getItem('simisterbin_session');
+            let session = localStorage.getItem(`simisterbin_session_${tenantId}`);
             if (session) {
                 try {
                     let decodedData = JSON.parse(dekripsiLokal(session));
                     await restoreSession(decodedData);
                 } catch (e) {
-                    localStorage.removeItem('simisterbin_session');
+                    localStorage.removeItem(`simisterbin_session_${tenantId}`);
                     $('#boxLinkExec').removeClass('hidden');
                     $('#boxForcePush').removeClass('hidden');
                     $('#loginPage').removeClass('hidden');
@@ -165,7 +165,7 @@ function logout() {
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            localStorage.removeItem('simisterbin_session'); // HAPUS SESI SAAT LOGOUT
+            localStorage.removeItem(`simisterbin_session_${tenantId}`); // HAPUS SESI SAAT LOGOUT
             $('#appPage').addClass('hidden');
             $('#loginPage').removeClass('hidden').addClass('animate__animated animate__fadeIn');
             $('#u').val(''); $('#p').val('');
