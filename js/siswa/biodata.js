@@ -204,9 +204,7 @@ function showImportSiswaPopup() {
                 <input type="file" id="swalImportSiswaFile" class="form-control form-control-sm" accept=".xlsx, .xls, .csv, .xml">
                 <div class="d-flex justify-content-between align-items-center mt-2">
                     <small class="text-muted"><i class="bi bi-info-circle me-1"></i> Mendukung format resmi Dapodik & Template Excel.</small>
-                    <a href="javascript:void(0)" onclick="downloadTemplate('siswa')" class="text-success small fw-semibold text-decoration-none">
-                        <i class="bi bi-download me-1"></i>Unduh Template Excel
-                    </a>
+
                 </div>
             </div>
         `,
