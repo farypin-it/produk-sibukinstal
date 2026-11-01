@@ -9,7 +9,7 @@ const tenantConfig = {
 
     "smkn1kotaternate": "https://script.google.com/macros/s/AKfycbxLHL11259Nb7Nxnujo3tEQf6bkdJ7r4pJvp-V4goZwOTP16D_3u7MPD5sw8pUfvA/exec",
     "sman1tebo": "https://script.google.com/macros/s/AKfycbwzNOc-i5QlZwYOEtC9SwHFKo4fQsOiZohQdKT02UxQGYNUv3nYt1Kvv2NfcQDMex5ESw/exec",
-    "sman2tebo": "https://script.google.com/macros/s/AKfycbx5BTd-5QfkHn-9DuHBpkpQePCIJ0hl3QZ4cjsEIbfYByM6mRr9DrlV90E9URMbFH0q/exec",
+    "sman2tebo": "https://script.google.com/macros/s/AKfycbyAD3I6tjiBq6vjZx_GcdCKP1m5yWAkdNcVZ5cYuRo2SMUsJz6qtU6kTvvbPlVY9eMs/exec",
     "sman5tebo": "https://script.google.com/macros/s/AKfycbwB_-EO-r-d6NlIKzGaJrjK-vtgaOTsRxGuppu3m1cFb53z1RShsV8ZUQ2ovikr2_qgrw/exec",
     "sman17tebo": "https://script.google.com/macros/s/AKfycbwX51-G3e3Mvy-SUxElwJTSTgyPitdLH84GRLyxuCe0xWXmh_uQVEnX6ereTyiCwl4GKQ/exec",
     "sman19tebo": "https://script.google.com/macros/s/AKfycbx6YkigF-4fDvb5G_gD7Rq1kS08peRgXHp9Poh1_q2-y-aqrEIQxYQz9Nmf31ZXFIca/exec",
