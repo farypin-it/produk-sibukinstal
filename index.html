@@ -862,23 +862,10 @@
                         </div>
                     </div>
                     <div class="modal-footer bg-white flex-wrap gap-2">
-                        <div class="btn-group btn-group-sm me-auto d-none shadow-sm" id="wrapModalBukuIndukBtns"
-                            role="group" aria-label="Cetak Buku Induk">
-                            <button type="button" class="btn btn-outline-primary fw-bold"
-                                onclick="cetakBukuIndukDariModal('portrait')"
-                                title="Lihat / Cetak PDF Buku Induk Versi Tegak">
-                                <i class="bi bi-file-earmark-pdf-fill me-1"></i>Buku Induk Tegak
-                            </button>
-                            <button type="button" class="btn btn-success fw-bold"
-                                onclick="cetakBukuIndukDariModal('landscape')"
-                                title="Lihat / Cetak PDF Buku Induk Versi Miring (Landscape)">
-                                <i class="bi bi-book-fill me-1"></i>Buku Induk Miring (Landscape)
-                            </button>
-                        </div>
                         <button type="button" class="btn btn-warning me-auto hidden fw-bold shadow-sm"
                             id="btnLihatNilai" style="display:none;"><i class="bi bi-table me-2"></i> Lihat
                             Transkrip/Leger</button>
-
+                        
                         <button type="button" class="btn btn-light border fw-bold" data-bs-dismiss="modal"
                             onclick="$('#mdlSiswa').modal('hide')">Tutup</button>
                         <button type="submit" id="btnSimpanSiswa"
@@ -1205,10 +1192,8 @@
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-file-earmark-pdf-fill fs-5"></i>
                         <div>
-                            <h5 class="modal-title fw-bold mb-0" id="pdfPreviewTitle" style="font-size: 1.05rem;">
-                                Pratinjau Dokumen PDF</h5>
-                            <small class="text-white-50" id="pdfPreviewSubTitle" style="font-size: 0.75rem;">Format
-                                Kertas Legal Landscape &
+                            <h5 class="modal-title fw-bold mb-0" id="pdfPreviewTitle" style="font-size: 1.05rem;">Pratinjau Dokumen PDF</h5>
+                            <small class="text-white-50" id="pdfPreviewSubTitle" style="font-size: 0.75rem;">Format Kertas Legal Landscape &
                                 Pratinjau Cetak Resmi</small>
                         </div>
                     </div>
@@ -1225,43 +1210,33 @@
                                         class="badge bg-success bg-opacity-10 text-success border border-success fw-bold px-2 py-1">
                                         <i class="bi bi-check-circle-fill me-1"></i> PDF Siap Dicetak
                                     </span>
-                                    <span class="badge bg-primary text-white fw-semibold"
-                                        id="pdfPreviewBadgeFormat">Legal Landscape</span>
+                                    <span class="badge bg-primary text-white fw-semibold" id="pdfPreviewBadgeFormat">Legal Landscape</span>
                                 </div>
 
                                 <!-- Kontrol Cepat Ganti Model & Tata Letak Buku Induk (Hanya muncul saat cetak Buku Induk) -->
-                                <div class="card border-primary border-opacity-25 bg-white shadow-sm rounded-3 p-3 mb-3 d-none"
-                                    id="bukuIndukPreviewControls">
+                                <div class="card border-primary border-opacity-25 bg-white shadow-sm rounded-3 p-3 mb-3 d-none" id="bukuIndukPreviewControls">
                                     <h6 class="fw-bold text-primary mb-2" style="font-size: 0.86rem;">
                                         <i class="bi bi-layout-split me-1"></i> Model & Tata Letak Buku Induk
                                     </h6>
                                     <div class="btn-group w-100 mb-2" role="group" aria-label="Pilih Model Buku Induk">
-                                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
-                                            id="btnPreviewOrientPortrait"
-                                            onclick="switchBukuIndukPreviewOrientation('portrait')">
+                                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="btnPreviewOrientPortrait" onclick="switchBukuIndukPreviewOrientation('portrait')">
                                             <i class="bi bi-file-earmark-richtext me-1"></i>Tegak (1 Kolom)
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
-                                            id="btnPreviewOrientLandscape"
-                                            onclick="switchBukuIndukPreviewOrientation('landscape')">
+                                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" id="btnPreviewOrientLandscape" onclick="switchBukuIndukPreviewOrientation('landscape')">
                                             <i class="bi bi-book me-1"></i>Miring (2 Kolom A–H)
                                         </button>
                                     </div>
                                     <div class="mb-2">
-                                        <label class="form-label small fw-bold text-secondary mb-1"
-                                            style="font-size: 0.76rem;">Ukuran Kertas:</label>
-                                        <select id="selPreviewPaperBukuInduk" class="form-select form-select-sm"
-                                            onchange="applyBukuIndukPreviewChange()">
+                                        <label class="form-label small fw-bold text-secondary mb-1" style="font-size: 0.76rem;">Ukuran Kertas:</label>
+                                        <select id="selPreviewPaperBukuInduk" class="form-select form-select-sm" onchange="applyBukuIndukPreviewChange()">
                                             <option value="f4">F4 / Folio (33 x 21.5 cm)</option>
                                             <option value="a4">A4 (29.7 x 21 cm)</option>
                                             <option value="legal">Legal (35.6 x 21.6 cm)</option>
                                         </select>
                                     </div>
                                     <div class="form-check form-switch mb-0" id="wrapPreviewKopLandscape">
-                                        <input class="form-check-input" type="checkbox" id="chkPreviewKopLandscape"
-                                            onchange="applyBukuIndukPreviewChange()">
-                                        <label class="form-check-label small text-secondary"
-                                            for="chkPreviewKopLandscape" style="font-size: 0.77rem;">
+                                        <input class="form-check-input" type="checkbox" id="chkPreviewKopLandscape" onchange="applyBukuIndukPreviewChange()">
+                                        <label class="form-check-label small text-secondary" for="chkPreviewKopLandscape" style="font-size: 0.77rem;">
                                             Tampilkan Kop & TTD Kepsek
                                         </label>
                                     </div>
