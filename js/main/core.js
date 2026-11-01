@@ -12,7 +12,7 @@ const tenantConfig = {
     "sman2tebo": "https://script.google.com/macros/s/AKfycbx5BTd-5QfkHn-9DuHBpkpQePCIJ0hl3QZ4cjsEIbfYByM6mRr9DrlV90E9URMbFH0q/exec",
     "sman5tebo": "https://script.google.com/macros/s/AKfycbwB_-EO-r-d6NlIKzGaJrjK-vtgaOTsRxGuppu3m1cFb53z1RShsV8ZUQ2ovikr2_qgrw/exec",
     "sman17tebo": "https://script.google.com/macros/s/AKfycbwX51-G3e3Mvy-SUxElwJTSTgyPitdLH84GRLyxuCe0xWXmh_uQVEnX6ereTyiCwl4GKQ/exec",
-    "sman19tebo": "https://script.google.com/macros/s/",
+    "sman19tebo": "https://script.google.com/macros/s/AKfycbx6YkigF-4fDvb5G_gD7Rq1kS08peRgXHp9Poh1_q2-y-aqrEIQxYQz9Nmf31ZXFIca/exec",
     "smkn1tebo": "https://script.google.com/macros/s/",
     "smkn2tebo": "https://script.google.com/macros/s/AKfycbz5dJIjry3slK-tEt1VU5APjGi2mSacXovWdXq_e7Fww1DXyswL6cbC8RbaRhKdj461/exec",
     "slbntebo": "https://script.google.com/macros/s/AKfycbyqbdj7AnTv7ft_DaWwRZuDQMjkt7Yekvs7O8wwqghu5hCLYwMGwng7TgG5SknXzKcuYQ/exec",
