@@ -1171,17 +1171,7 @@ window.cetakBukuIndukDariModal = function (orient) {
 (function bindBukuIndukUiEvents_() {
     const bindAll = () => {
         syncMasterBukuIndukToolbar_();
-        const mdlSiswa = document.getElementById('mdlSiswa');
-        if (mdlSiswa && !mdlSiswa.dataset.biBound) {
-            mdlSiswa.addEventListener('show.bs.modal', () => {
-                setTimeout(() => {
-                    const nisVal = String($('#frmSiswa [name="nis"]').val() || '').trim();
-                    const isExisting = $('#isEdit').val() === 'true' && Boolean(nisVal);
-                    $('#wrapModalBukuIndukBtns').toggleClass('d-none', !isExisting);
-                }, 20);
-            });
-            mdlSiswa.dataset.biBound = '1';
-        }
+
     };
 
     if (document.readyState === 'loading') {
