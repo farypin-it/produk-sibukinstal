@@ -98,21 +98,41 @@ function generateQRCodeDataURL_(text, size = 200) {
 
 function generateQRCodeArtifacts_(text, size = 200) {
     const dataUrl = generateQRCodeDataURL_(text, size);
+    let svg = '';
+    try {
+        if (text && typeof QRCode !== 'undefined') {
+            const qr = new QRCode(document.createElement('div'), {
+                text: text,
+                width: size,
+                height: size,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+            const matrix = qr && qr._oQRCode;
+            if (matrix && typeof matrix.getModuleCount === 'function') {
+                const count = matrix.getModuleCount();
+                const margin = 4;
+                const dimension = count + margin * 2;
+                const modules = [];
+                for (let row = 0; row < count; row++) {
+                    for (let col = 0; col < count; col++) {
+                        if (matrix.isDark(row, col)) {
+                            modules.push(`<rect x="${col + margin}" y="${row + margin}" width="1" height="1"/>`);
+                        }
+                    }
+                }
+                svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${dimension} ${dimension}" role="img" aria-label="QR TTE"><rect width="${dimension}" height="${dimension}" fill="#fff"/><g fill="#000" shape-rendering="crispEdges">${modules.join('')}</g></svg>`;
+            }
+        }
+    } catch (err) {
+        console.warn('[QR Code Generator] SVG QR gagal dibuat:', err);
+    }
     return {
         dataUrl: dataUrl,
-        svg: '',
+        svg: svg,
         svgLandscape: ''
     };
-}
-
-function waitForQRCodeImage_(dataUrl) {
-    if (!dataUrl) return Promise.reject(new Error('Data QR TTE kosong.'));
-
-    const image = new Image();
-    image.src = dataUrl;
-    return image.decode().catch((error) => {
-        throw new Error(`QR TTE gagal dimuat sebelum PDF dibuat: ${error.message}`);
-    });
 }
 
 function buildVerificationUrlForSiswa_(s, ctx) {
@@ -624,10 +644,10 @@ function buildBukuIndukPortraitHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                         <div style="float:right; text-align:center; width:90%; font-size: ${baseFs}; margin-top: 6px;">
                             ${escBI_(ctx.tempatCetak)}, ${escBI_(ctx.tglCetak)} <br>
                             Kepala Sekolah,<br>
-                            ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
+                            ${(cfg.signatureType !== 'manual' && (ctx.qrCodeSvg || ctx.qrCodeDataUrl)) ? `
                             <div style="margin: 3px auto 4px auto; text-align: center;">
                                 <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
-                                    <img src="${ctx.qrCodeDataUrl}" crossorigin="anonymous" style="width: 78px; height: 78px; display: block; margin: 0 auto;" alt="QR TTE">
+                                    ${ctx.qrCodeSvg ? ctx.qrCodeSvg.replace('<svg ', '<svg style="width:78px;height:78px;display:block;margin:0 auto;" ') : `<img src="${ctx.qrCodeDataUrl}" style="width: 78px; height: 78px; display: block; margin: 0 auto;" alt="QR TTE">`}
                                 </div>
                                 <div style="font-size: 6.2pt; color: #444; line-height: 1.15; margin-top: 2px;">
                                     Ditandatangani secara elektronik (TTE)<br>
@@ -974,10 +994,10 @@ function buildBukuIndukLandscapeHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                                 <div style="display: inline-block; text-align: center; min-width: 170px;">
                                     ${escBI_(ctx.tempatCetak)}, ${escBI_(ctx.tglCetak)}<br>
                                     Kepala Sekolah,<br>
-                                    ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
+                                    ${(cfg.signatureType !== 'manual' && (ctx.qrCodeSvg || ctx.qrCodeDataUrl)) ? `
                                     <div style="margin: 2px auto 3px auto; text-align: center;">
                                         <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
-                                            <img src="${ctx.qrCodeDataUrl}" crossorigin="anonymous" style="width: 66px; height: 66px; display: block; margin: 0 auto;" alt="QR TTE">
+                                            ${ctx.qrCodeSvg ? ctx.qrCodeSvg.replace('<svg ', '<svg style="width:66px;height:66px;display:block;margin:0 auto;" ') : `<img src="${ctx.qrCodeDataUrl}" style="width: 66px; height: 66px; display: block; margin: 0 auto;" alt="QR TTE">`}
                                         </div>
                                         <div style="font-size: 5.8pt; color: #444; line-height: 1.1; margin-top: 1px;">
                                             TTE: <b style="font-family: monospace; font-size: 5.8pt; color: #111;">${escBI_(ctx.tteCode || '')}</b>
@@ -1073,13 +1093,14 @@ async function renderBukuIndukToPreview_(ctx) {
         signatureType: cfg.signatureType || 'tte'
     });
 
-    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 50)) {
+    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 50 || !ctx.qrCodeSvg)) {
         const verif = buildVerificationUrlForSiswa_(s, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        ctx.qrCodeDataUrl = generateQRCodeDataURL_(verif.url, 200);
-        ctx.qrCodeSvg = '';
-        ctx.qrCodeSvgLandscape = '';
+        const qrArt = generateQRCodeArtifacts_(verif.url, 200);
+        ctx.qrCodeDataUrl = qrArt.dataUrl;
+        ctx.qrCodeSvg = qrArt.svg;
+        ctx.qrCodeSvgLandscape = qrArt.svgLandscape;
     }
 
     updateBukuIndukPreviewSidebar_(cfg, s);
@@ -1091,16 +1112,12 @@ async function renderBukuIndukToPreview_(ctx) {
         ? buildBukuIndukLandscapeHTML_(s, ctx.imgMasuk, ctx.imgKeluar, cfg, ctx)
         : buildBukuIndukPortraitHTML_(s, ctx.imgMasuk, ctx.imgKeluar, cfg, ctx);
 
-    if (cfg.signatureType !== 'manual') {
-        try {
-            await waitForQRCodeImage_(ctx.qrCodeDataUrl);
-        } catch (err) {
-            console.error('[BukuInduk QR] Gagal memuat QR TTE:', err);
-            $('#loader').addClass('hidden');
-            $('#loaderText').text('Memuat Data...');
-            Swal.fire('QR TTE Tidak Dapat Dimuat', err.message, 'error');
-            return;
-        }
+    if (cfg.signatureType !== 'manual' && !ctx.qrCodeSvg) {
+        console.error('[BukuInduk QR] Generator SVG QR tidak tersedia.');
+        $('#loader').addClass('hidden');
+        $('#loaderText').text('Memuat Data...');
+        Swal.fire('QR TTE Tidak Dapat Dibuat', 'Generator QR lokal tidak tersedia. Muat ulang aplikasi lalu coba kembali.', 'error');
+        return;
     }
 
     const safeName = cleanValBI_(s[2] || s[0], 'Siswa').replace(/[/\\?%*:|"<>]/g, '_');
@@ -1164,9 +1181,10 @@ window.applyBukuIndukPreviewChange = async function () {
         const verif = buildVerificationUrlForSiswa_(ctx.siswa, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        ctx.qrCodeDataUrl = generateQRCodeDataURL_(verif.url, 200);
-        ctx.qrCodeSvg = '';
-        ctx.qrCodeSvgLandscape = '';
+        const qrArt = generateQRCodeArtifacts_(verif.url, 200);
+        ctx.qrCodeDataUrl = qrArt.dataUrl;
+        ctx.qrCodeSvg = qrArt.svg;
+        ctx.qrCodeSvgLandscape = qrArt.svgLandscape;
     }
     renderBukuIndukToPreview_(ctx);
 };
