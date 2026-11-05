@@ -267,12 +267,28 @@
             }
         }
 
+        const tenantConfig = {
+            "demo": "https://script.google.com/macros/s/AKfycbyfNXMoC89bUeloyLiJMmN34pCKZFIYC-cF-zA4IP1eqTKZj8GzuiSI3lLhM5fYPS_7/exec",
+            "sman15tebo": "https://script.google.com/macros/s/AKfycbwIBecBNAosHeM88N8tzdKxMFZFr7wN89Wfb1fB6B-6sZ2AJ_C2VQncJV1lmsLo72qQ/exec",
+            "smkn1kotaternate": "https://script.google.com/macros/s/AKfycbypfnJFHWwdwRwigATVcTKO67PbJYO5MtfeqFPDZKiPNjC0SmCH31VF3LFajev1R3Gd/exec",
+            "sman1tebo": "https://script.google.com/macros/s/AKfycbwzNOc-i5QlZwYOEtC9SwHFKo4fQsOiZohQdKT02UxQGYNUv3nYt1Kvv2NfcQDMex5ESw/exec",
+            "sman2tebo": "https://script.google.com/macros/s/AKfycbyAD3I6tjiBq6vjZx_GcdCKP1m5yWAkdNcVZ5cYuRo2SMUsJz6qtU6kTvvbPlVY9eMs/exec",
+            "sman5tebo": "https://script.google.com/macros/s/AKfycbwB_-EO-r-d6NlIKzGaJrjK-vtgaOTsRxGuppu3m1cFb53z1RShsV8ZUQ2ovikr2_qgrw/exec",
+            "sman17tebo": "https://script.google.com/macros/s/AKfycbwX51-G3e3Mvy-SUxElwJTSTgyPitdLH84GRLyxuCe0xWXmh_uQVEnX6ereTyiCwl4GKQ/exec",
+            "sman19tebo": "https://script.google.com/macros/s/AKfycbx6YkigF-4fDvb5G_gD7Rq1kS08peRgXHp9Poh1_q2-y-aqrEIQxYQz9Nmf31ZXFIca/exec",
+            "smkn1tebo": "https://script.google.com/macros/s/AKfycbw6WMBov4YsHwELoIZyZxZBYwFWhE_wkWPQXGylsCNrU03QtwXPqsl-UERszhZBkeRY/exec",
+            "smkn2tebo": "https://script.google.com/macros/s/AKfycbz5dJIjry3slK-tEt1VU5APjGi2mSacXovWdXq_e7Fww1DXyswL6cbC8RbaRhKdj461/exec",
+            "slbntebo": "https://script.google.com/macros/s/AKfycbyqbdj7AnTv7ft_DaWwRZuDQMjkt7Yekvs7O8wwqghu5hCLYwMGwng7TgG5SknXzKcuYQ/exec"
+        };
+
         document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get('d');
             const code = urlParams.get('code') || 'TTE-VALID';
             const rawNis = urlParams.get('nis');
             const rawNisn = urlParams.get('nisn');
+            const rawTgl = urlParams.get('tgl') || '';
+            const tenantId = (urlParams.get('id') || 'sman15tebo').trim().toLowerCase();
 
             let data = null;
 
@@ -291,19 +307,20 @@
                 data = {
                     nis: rawNis || '-',
                     nisn: rawNisn || '-',
-                    nama: urlParams.get('nama') || 'Siswa SiBuk InSTal',
+                    nama: urlParams.get('nama') || 'Memuat data siswa...',
                     jk: urlParams.get('jk') || '-',
-                    ttl: urlParams.get('ttl') || '-',
+                    ttl: rawTgl || urlParams.get('ttl') || '-',
                     kls: urlParams.get('kls') || '-',
-                    thnLulus: urlParams.get('thnLulus') || '',
-                    status: urlParams.get('status') || 'Aktif',
+                    thnLulus: urlParams.get('thnLulus') || urlParams.get('thn') || '',
+                    status: urlParams.get('st') || urlParams.get('status') || 'Aktif',
                     ayah: urlParams.get('ayah') || '-',
                     code: code,
-                    sekolah: urlParams.get('sekolah') || 'SEKOLAH INDONESIA',
-                    instansi: urlParams.get('instansi') || 'DINAS PENDIDIKAN',
+                    sekolah: urlParams.get('sekolah') || (tenantId === 'sman15tebo' ? 'SMAN 15 TEBO' : tenantId.toUpperCase()),
+                    instansi: urlParams.get('instansi') || 'DINAS PENDIDIKAN / KEMENTERIAN PENDIDIKAN',
                     kepsek: urlParams.get('kepsek') || 'Kepala Sekolah',
                     nip: urlParams.get('nip') || 'NIP. -',
-                    tglCetak: urlParams.get('tgl') || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                    tglCetak: rawTgl || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+                    foto: urlParams.get('foto') || ''
                 };
             }
 
@@ -346,23 +363,84 @@
                 badgeStatus.textContent = 'Siswa Aktif';
             }
 
+            // PENCARIAN DATA LENGKAP SECARA LIVE DARI DATABASE SEKOLAH (ONLINE / MULTI-TENANT)
+            const targetApi = urlParams.get('api') || tenantConfig[tenantId];
+            if (targetApi && (rawNisn || rawNis)) {
+                fetch(targetApi, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'cekValidasiSiswa', data: { nisn: rawNisn || rawNis } })
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.status === 'success' && res.data) {
+                        const d = res.data;
+                        if (d.nama) {
+                            document.getElementById('valNama').textContent = d.nama;
+                            document.getElementById('tblNama').textContent = d.nama;
+                        }
+                        if (d.jk) {
+                            const jkText = (d.jk === 'L' || d.jk === 'Laki-laki') ? 'Laki-laki' : 'Perempuan';
+                            document.getElementById('tblJk').textContent = jkText;
+                        }
+                        if (d.tmplahir || d.tgllahir_indo) {
+                            document.getElementById('tblTtl').textContent = (d.tmplahir && d.tgllahir_indo) ? `${d.tmplahir}, ${d.tgllahir_indo}` : (d.tgllahir_indo || d.tmplahir);
+                        }
+                        if (d.ayah) document.getElementById('tblAyah').textContent = d.ayah;
+                        if (d.kls) {
+                            document.getElementById('tblKelas').textContent = d.kls;
+                            document.getElementById('valKelasStatus').textContent = 'Kelas Saat Ini: ' + d.kls;
+                        }
+                        if (d.status) {
+                            const isAl = String(d.status).toLowerCase() === 'lulus';
+                            const b = document.getElementById('badgeStatusSiswa');
+                            b.className = isAl ? 'badge bg-success text-white px-2 py-1 mb-1' : 'badge bg-primary text-white px-2 py-1 mb-1';
+                            b.textContent = isAl ? 'Alumni / Lulus' : 'Siswa Aktif';
+                        }
+                        const fotoId = d.foto_keluar || d.foto_id;
+                        if (fotoId) {
+                            const img = document.getElementById('imgFotoSiswa');
+                            const ph = document.getElementById('placeholderFoto');
+                            img.src = `https://lh3.googleusercontent.com/d/${fotoId}`;
+                            img.classList.remove('d-none');
+                            ph.classList.add('d-none');
+                        }
+                    }
+                }).catch(() => {
+                    // Jika offline / fetch gagal, data pokok NIS, NISN, Tgl Lahir, dan Kode TTE tetap tampil sah
+                    if (data.nama === 'Memuat data siswa...') {
+                        document.getElementById('valNama').textContent = 'Siswa Terdaftar (Buku Induk)';
+                        document.getElementById('tblNama').textContent = 'Siswa Terdaftar (Buku Induk)';
+                    }
+                });
+            }
+
             // TTE Box
             document.getElementById('tteKepsek').textContent = clean(data.kepsek, 'Kepala Sekolah');
             document.getElementById('tteNip').textContent = clean(data.nip, 'NIP. -');
             document.getElementById('tteTgl').textContent = `Tanggal Penerbitan: ${clean(data.tglCetak, '-')}`;
             document.getElementById('valTteCode').textContent = clean(data.code || code, 'TTE-VALID');
 
-            // Render Foto (jika ada data URL atau image)
+            // Render Foto (jika ada data URL, Drive ID, atau link gambar eksternal)
             const foto = data.foto || data.fotoKeluar || data.fotoId;
             const imgEl = document.getElementById('imgFotoSiswa');
             const placeholderEl = document.getElementById('placeholderFoto');
 
-            if (foto && typeof foto === 'string' && (foto.startsWith('data:image') || foto.startsWith('http'))) {
-                imgEl.src = foto;
-                imgEl.classList.remove('d-none');
-                placeholderEl.classList.add('d-none');
+            if (foto && typeof foto === 'string' && foto.trim()) {
+                const trimmed = foto.trim();
+                if (trimmed.startsWith('data:image') || trimmed.startsWith('http')) {
+                    imgEl.src = trimmed;
+                    imgEl.classList.remove('d-none');
+                    placeholderEl.classList.add('d-none');
+                } else if (/^[A-Za-z0-9_-]{20,}$/.test(trimmed)) {
+                    imgEl.src = 'https://lh3.googleusercontent.com/d/' + trimmed;
+                    imgEl.classList.remove('d-none');
+                    placeholderEl.classList.add('d-none');
+                } else {
+                    placeholderEl.classList.remove('d-none');
+                    imgEl.classList.add('d-none');
+                }
             } else {
-                // Biarkan placeholder foto tampil
                 placeholderEl.classList.remove('d-none');
                 imgEl.classList.add('d-none');
             }
