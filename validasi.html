@@ -351,8 +351,8 @@
             }
 
             // Render Header
-            const namaSekolah = clean(urlParams.get('sekolah') || data.sekolah || (tenantId === 'sman15tebo' ? '' : tenantId.toUpperCase()), '');
-            const namaInstansi = clean(urlParams.get('instansi') || data.instansi, '');
+            let namaSekolah = clean(urlParams.get('sekolah') || data.sekolah, '');
+            let namaInstansi = clean(urlParams.get('instansi') || data.instansi, '');
             if (namaSekolah) {
                 document.getElementById('lblSekolah').textContent = namaSekolah;
                 document.getElementById('tteDescription').textContent =
@@ -415,12 +415,14 @@
                     if (!settings || typeof settings !== 'object') {
                         throw new Error('Respons pengaturan sekolah tidak valid.');
                     }
-                    if (!namaSekolah && settings.nama_sekolah) {
+                    if (settings.nama_sekolah) {
+                        namaSekolah = settings.nama_sekolah;
                         document.getElementById('lblSekolah').textContent = settings.nama_sekolah;
                         document.getElementById('tteDescription').textContent =
                             `Dokumen lembar buku induk ini ditandatangani secara digital oleh Kepala Sekolah ${settings.nama_sekolah}.`;
                     }
-                    if (!namaInstansi && settings.nama_instansi) {
+                    if (settings.nama_instansi) {
+                        namaInstansi = settings.nama_instansi;
                         document.getElementById('lblInstansi').textContent = settings.nama_instansi;
                     }
                     const loadLogo = (elementId, configuredLogo) => {
