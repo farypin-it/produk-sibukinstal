@@ -32,9 +32,9 @@ function loadBukuIndukPrefs_() {
 }
 
 // ==========================================
-// FUNGSI GENERATOR QR CODE TTE & URL VALIDASI BUKU INDUK
+// FUNGSI GENERATOR QR CODE TTE & URL VALIDASI BUKU INDUK (ULTRA-SHARP & EASY SCAN)
 // ==========================================
-function generateQRCodeDataURL_(text, size = 120) {
+function generateQRCodeDataURL_(text, size = 240) {
     return new Promise((resolve) => {
         try {
             if (typeof QRCode !== 'undefined') {
@@ -44,35 +44,58 @@ function generateQRCodeDataURL_(text, size = 120) {
                 tempDiv.style.top = '-9999px';
                 document.body.appendChild(tempDiv);
 
+                const qrDimension = Math.max(size, 240);
+                const correctLevel = (typeof QRCode.CorrectLevel !== 'undefined') ? QRCode.CorrectLevel.M : 0;
+
                 new QRCode(tempDiv, {
                     text: text,
-                    width: size,
-                    height: size,
+                    width: qrDimension,
+                    height: qrDimension,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
-                    correctLevel: (typeof QRCode.CorrectLevel !== 'undefined') ? QRCode.CorrectLevel.M : 0
+                    correctLevel: correctLevel
                 });
 
                 setTimeout(() => {
                     let dataUrl = '';
-                    const canvas = tempDiv.querySelector('canvas');
-                    if (canvas) {
-                        try { dataUrl = canvas.toDataURL('image/png'); } catch (_) { }
+                    const rawCanvas = tempDiv.querySelector('canvas');
+                    if (rawCanvas && rawCanvas.width > 0) {
+                        try {
+                            // Standar ISO QR Code: Berikan Quiet Zone (margin putih bersih 8%)
+                            // agar sensor kamera HP dapat mengunci 3 kotak sudut posisi dalam 0.1 detik
+                            const margin = Math.max(12, Math.round(qrDimension * 0.08));
+                            const borderedCanvas = document.createElement('canvas');
+                            borderedCanvas.width = qrDimension + (margin * 2);
+                            borderedCanvas.height = qrDimension + (margin * 2);
+                            const bCtx = borderedCanvas.getContext('2d');
+                            bCtx.fillStyle = '#ffffff';
+                            bCtx.fillRect(0, 0, borderedCanvas.width, borderedCanvas.height);
+                            bCtx.drawImage(rawCanvas, margin, margin, qrDimension, qrDimension);
+                            dataUrl = borderedCanvas.toDataURL('image/png');
+                        } catch (_) {
+                            try { dataUrl = rawCanvas.toDataURL('image/png'); } catch (_) { }
+                        }
                     }
+
                     if (!dataUrl) {
                         const img = tempDiv.querySelector('img');
-                        if (img && img.src) dataUrl = img.src;
+                        if (img && img.src && img.src.startsWith('data:image')) {
+                            dataUrl = img.src;
+                        }
                     }
+
                     try { document.body.removeChild(tempDiv); } catch (_) { }
+
                     if (dataUrl) return resolve(dataUrl);
 
-                    resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=0&data=${encodeURIComponent(text)}`);
-                }, 60);
+                    // Fallback jika canvas lokal gagal
+                    resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`);
+                }, 80);
                 return;
             }
         } catch (_) { }
 
-        resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=0&data=${encodeURIComponent(text)}`);
+        resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`);
     });
 }
 
@@ -82,11 +105,11 @@ function buildVerificationUrlForSiswa_(s, ctx) {
     const nama = cleanValBI_(s[2], '');
     const tgllahir = formatTglBI_(s[6], '');
     const tmptlahir = cleanValBI_(s[5], '');
-    const jk = s[7] === 'L' ? 'Laki-laki' : (s[7] === 'P' ? 'Perempuan' : cleanValBI_(s[7], ''));
+    const jk = s[7] === 'L' ? 'L' : (s[7] === 'P' ? 'P' : cleanValBI_(s[7], ''));
     const status = cleanValBI_(s[31], 'Aktif');
     const isAlumni = status.toLowerCase() === 'lulus';
     const klsSaatIni = cleanValBI_(s[52] || s[29], '-');
-    const thnKeluar = s[32] ? String(s[32]).substring(0, 4) : '-';
+    const thnKeluar = s[32] ? String(s[32]).substring(0, 4) : '';
     const namaAyah = cleanValBI_(s[20], '-');
     const fotoKeluar = cleanValBI_(s[36], '');
     const fotoMasuk = cleanValBI_(s[35], '');
@@ -106,48 +129,34 @@ function buildVerificationUrlForSiswa_(s, ctx) {
 
     const conf = (ctx && ctx.conf) || (typeof globalConf !== 'undefined' ? globalConf : {});
 
-    const payload = {
-        v: 1,
-        code: tteCode,
-        nis: nis,
-        nisn: nisn,
-        nama: nama,
-        jk: jk,
-        ttl: (tmptlahir && tgllahir) ? `${tmptlahir}, ${tgllahir}` : (tgllahir || tmptlahir || '-'),
-        kls: klsSaatIni,
-        thnLulus: thnKeluar,
-        status: status,
-        ayah: namaAyah,
-        foto: (fotoTampil && fotoTampil.startsWith('data:image')) ? fotoTampil : '',
-        sekolah: conf.nama_sekolah || '',
-        instansi: conf.nama_instansi || '',
-        kepsek: (ctx && ctx.namaKepsek) || conf.nama_kepsek || '',
-        nip: (ctx && ctx.nipKepsek) || conf.nip_kepsek || '',
-        tglCetak: (ctx && ctx.tglCetak) || ''
-    };
+    // Ambil setting link validasi secara agresif dari semua sumber (conf, window, localStorage, DOM)
+    let settingUrl = (
+        (conf && conf.link_validasi) ||
+        (typeof window !== 'undefined' && window.linkValidasiPublik) ||
+        (typeof localStorage !== 'undefined' && (localStorage.getItem('setting_link_validasi') || localStorage.getItem('link_validasi'))) ||
+        (typeof $ !== 'undefined' && $('#setLinkValidasi').length && $('#setLinkValidasi').val()) ||
+        (conf && conf.web_sekolah) ||
+        ''
+    ).trim();
 
-    let token = '';
-    try {
-        token = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    } catch (_) {
-        try { token = btoa(JSON.stringify(payload)); } catch (_) { }
+    // Auto-prepend https:// jika pengguna lupa mengetik protokol (misal: sibukinstal.web.id/?id=...)
+    if (settingUrl && !/^https?:\/\//i.test(settingUrl)) {
+        settingUrl = 'https://' + settingUrl;
     }
 
-    // Resolusi URL validasi publik (Multi-tenant & Offline to Online Scan Support)
-    let targetUrl = '';
-    let settingUrl = (conf.link_validasi || (typeof window !== 'undefined' && window.linkValidasiPublik) || (typeof localStorage !== 'undefined' && localStorage.getItem('setting_link_validasi')) || '').trim();
-    if (!settingUrl && conf.web_sekolah && String(conf.web_sekolah).startsWith('http')) {
-        settingUrl = String(conf.web_sekolah).trim();
-    }
+    // Jika masih kosong dan sedang di web, gunakan URL saat ini
     if (!settingUrl && typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
         settingUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '') + window.location.search;
     }
+
+    // Default fallback publik resmi
     if (!settingUrl) {
         settingUrl = 'https://sibukinstal.web.id';
     }
 
+    let targetUrl = '';
     try {
-        const parsed = new URL(settingUrl.startsWith('http') ? settingUrl : 'https://' + settingUrl);
+        const parsed = new URL(settingUrl);
         let path = parsed.pathname || '';
         if (path.endsWith('/') || !path.includes('.')) {
             path = path.replace(/\/+$/, '') + '/validasi.html';
@@ -155,15 +164,36 @@ function buildVerificationUrlForSiswa_(s, ctx) {
             path = path.replace(/\/[^/]*$/, '/validasi.html');
         }
         parsed.pathname = path;
+
+        // PARAMETER RESMI TTE: HANYA NIS, NISN, TANGGAL LAHIR, DAN KODE TTE
+        // Sesuai instruksi: data nama panjang, kelas, ayah, jk TIDAK dimasukkan ke URL QR Code
+        // agar panjang URL hanya ~85-95 karakter dan QR Code tetap berukuran modul besar, renggang, dan 100% cepat di-scan.
         parsed.searchParams.set('code', tteCode);
-        parsed.searchParams.set('d', token);
+        if (nis) parsed.searchParams.set('nis', nis);
+        if (nisn) parsed.searchParams.set('nisn', nisn);
+        if (rawTglLahir) parsed.searchParams.set('tgl', rawTglLahir);
+
         targetUrl = parsed.toString();
     } catch (_) {
-        targetUrl = `${settingUrl.replace(/\/+$/, '')}/validasi.html?code=${encodeURIComponent(tteCode)}&d=${encodeURIComponent(token)}`;
+        targetUrl = `${settingUrl.replace(/\/+$/, '')}/validasi.html?code=${encodeURIComponent(tteCode)}&nis=${encodeURIComponent(nis)}&nisn=${encodeURIComponent(nisn)}&tgl=${encodeURIComponent(rawTglLahir)}`;
     }
-    const fullUrl = targetUrl;
+
+    const payload = {
+        code: tteCode,
+        nis: nis,
+        nisn: nisn,
+        nama: nama,
+        jk: jk === 'L' ? 'Laki-laki' : (jk === 'P' ? 'Perempuan' : jk),
+        ttl: (tmptlahir && tgllahir) ? `${tmptlahir}, ${tgllahir}` : (tgllahir || tmptlahir || '-'),
+        kls: klsSaatIni,
+        thnLulus: thnKeluar,
+        status: status,
+        ayah: namaAyah,
+        sekolah: conf.nama_sekolah || ''
+    };
+
     return {
-        url: fullUrl,
+        url: targetUrl,
         tteCode: tteCode,
         payload: payload
     };
@@ -580,10 +610,12 @@ function buildBukuIndukPortraitHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                             Kepala Sekolah,<br>
                             ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
                             <div style="margin: 3px auto 4px auto; text-align: center;">
-                                <img src="${ctx.qrCodeDataUrl}" style="width: 72px; height: 72px; display: inline-block; border: 1px solid #ccc; padding: 2px; background: #fff;">
-                                <div style="font-size: 6.2pt; color: #555; line-height: 1.1; margin-top: 1px;">
+                                <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
+                                    <img src="${ctx.qrCodeDataUrl}" style="width: 78px; height: 78px; display: block; image-rendering: -webkit-optimize-contrast;">
+                                </div>
+                                <div style="font-size: 6.2pt; color: #444; line-height: 1.15; margin-top: 2px;">
                                     Ditandatangani secara elektronik (TTE)<br>
-                                    <span style="font-family: monospace; font-size: 5.8pt;">${escBI_(ctx.tteCode || '')}</span>
+                                    <b style="font-family: monospace; font-size: 6pt; color: #111;">${escBI_(ctx.tteCode || '')}</b>
                                 </div>
                             </div>` : `<br><br><br><br>`}
                             <b><u>${escBI_(ctx.namaKepsek)}</u></b><br>
@@ -928,9 +960,11 @@ function buildBukuIndukLandscapeHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                                     Kepala Sekolah,<br>
                                     ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
                                     <div style="margin: 2px auto 3px auto; text-align: center;">
-                                        <img src="${ctx.qrCodeDataUrl}" style="width: 58px; height: 58px; display: inline-block; border: 1px solid #ccc; padding: 2px; background: #fff;">
-                                        <div style="font-size: 5.8pt; color: #555; line-height: 1.05; margin-top: 1px;">
-                                            TTE Terverifikasi: <span style="font-family: monospace;">${escBI_(ctx.tteCode || '')}</span>
+                                        <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
+                                            <img src="${ctx.qrCodeDataUrl}" style="width: 66px; height: 66px; display: block; image-rendering: -webkit-optimize-contrast;">
+                                        </div>
+                                        <div style="font-size: 5.8pt; color: #444; line-height: 1.1; margin-top: 1px;">
+                                            TTE: <b style="font-family: monospace; font-size: 5.8pt; color: #111;">${escBI_(ctx.tteCode || '')}</b>
                                         </div>
                                     </div>` : `<br><br><br>`}
                                     <b><u>${escBI_(ctx.namaKepsek)}</u></b><br>
@@ -1083,7 +1117,7 @@ window.switchBukuIndukPreviewOrientation = function (newOrientation) {
     renderBukuIndukToPreview_(ctx);
 };
 
-window.applyBukuIndukPreviewChange = function () {
+window.applyBukuIndukPreviewChange = async function () {
     const ctx = window._activeBukuIndukCtx;
     if (!ctx) return;
     const selectedPaper = $('#selPreviewPaperBukuInduk').val() || 'f4';
@@ -1092,7 +1126,14 @@ window.applyBukuIndukPreviewChange = function () {
     ctx.cfg.paper = ['f4', 'a4', 'legal'].includes(selectedPaper) ? selectedPaper : 'f4';
     ctx.cfg.withKopLandscape = Boolean(withKop);
     ctx.cfg.signatureType = useTte ? 'tte' : 'manual';
-    if (!useTte) ctx.qrCodeDataUrl = '';
+    if (!useTte) {
+        ctx.qrCodeDataUrl = '';
+    } else if (!ctx.qrCodeDataUrl) {
+        const verif = buildVerificationUrlForSiswa_(ctx.siswa, ctx);
+        ctx.tteCode = verif.tteCode;
+        ctx.verifUrl = verif.url;
+        ctx.qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
+    }
     renderBukuIndukToPreview_(ctx);
 };
 
