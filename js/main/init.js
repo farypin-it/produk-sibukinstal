@@ -1467,12 +1467,12 @@ window.saveLinkValidasiOnly = async function(e) {
         if (res && res.status === 'error') {
             showCoolAlert('Peringatan', res.message || 'Gagal menyimpan ke server online, namun tersimpan di lokal.', 'warning');
         } else {
-            showCoolAlert('Tersimpan', 'Link validasi publik berhasil disimpan:<br><b>' + val + '</b>', 'success');
+            showCoolAlert('Tersimpan', 'Link validasi publik berhasil disimpan: ' + val, 'success');
             if (typeof loadSettings === 'function') loadSettings();
         }
     } catch (err) {
         $('#loader').addClass('hidden');
-        showCoolAlert('Tersimpan Lokal', 'Link validasi publik tersimpan di perangkat ini:<br><b>' + val + '</b>', 'info');
+        showCoolAlert('Tersimpan Lokal', 'Link validasi publik tersimpan di perangkat ini: ' + val, 'info');
     }
 };
 
