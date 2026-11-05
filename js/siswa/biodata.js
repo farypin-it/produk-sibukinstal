@@ -105,6 +105,16 @@ function generateQRCodeArtifacts_(text, size = 200) {
     };
 }
 
+function waitForQRCodeImage_(dataUrl) {
+    if (!dataUrl) return Promise.reject(new Error('Data QR TTE kosong.'));
+
+    const image = new Image();
+    image.src = dataUrl;
+    return image.decode().catch((error) => {
+        throw new Error(`QR TTE gagal dimuat sebelum PDF dibuat: ${error.message}`);
+    });
+}
+
 function buildVerificationUrlForSiswa_(s, ctx) {
     const nis = cleanValBI_(s[0], '');
     const nisn = cleanValBI_(s[1], '');
@@ -1080,6 +1090,18 @@ async function renderBukuIndukToPreview_(ctx) {
     const html = isLandscape
         ? buildBukuIndukLandscapeHTML_(s, ctx.imgMasuk, ctx.imgKeluar, cfg, ctx)
         : buildBukuIndukPortraitHTML_(s, ctx.imgMasuk, ctx.imgKeluar, cfg, ctx);
+
+    if (cfg.signatureType !== 'manual') {
+        try {
+            await waitForQRCodeImage_(ctx.qrCodeDataUrl);
+        } catch (err) {
+            console.error('[BukuInduk QR] Gagal memuat QR TTE:', err);
+            $('#loader').addClass('hidden');
+            $('#loaderText').text('Memuat Data...');
+            Swal.fire('QR TTE Tidak Dapat Dimuat', err.message, 'error');
+            return;
+        }
+    }
 
     const safeName = cleanValBI_(s[2] || s[0], 'Siswa').replace(/[/\\?%*:|"<>]/g, '_');
     const opt = {
