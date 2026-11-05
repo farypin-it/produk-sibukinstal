@@ -32,17 +32,19 @@ function loadBukuIndukPrefs_() {
 }
 
 // ==========================================
-// FUNGSI GENERATOR QR CODE TTE (VECTOR SVG & ULTRA-SHARP CANVAS PNG)
-// 100% Deterministik, Anti-Blank, Bebas Ketergantungan Jaringan, Scannable
+// FUNGSI GENERATOR QR CODE TTE (ULTRA-SHARP CANVAS PNG & IMAGE FALLBACK)
+// 100% Deterministik, Anti-Blank, Bebas Putih Polos, Scannable di HP
 // ==========================================
-function generateQRCodeArtifacts_(text, size = 240) {
-    let dataUrl = '';
-    let svgPortrait = '';
-    let svgLandscape = '';
+function generateQRCodeDataURL_(text, size = 200) {
+    if (!text) return '';
 
+    // 1. Fallback URL online (PNG murni, terbukti 100% tampil di elemen <img> dan html2pdf)
+    const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=2&data=${encodeURIComponent(text)}`;
+
+    // 2. Jika library QRCode lokal tersedia, generate base64 PNG langsung di memory (100% offline)
     try {
-        if (typeof QRCode !== 'undefined') {
-            const qrDimension = Math.max(size, 240);
+        if (typeof QRCode !== 'undefined' && typeof document !== 'undefined' && document.createElement) {
+            const qrDimension = Math.max(size, 200);
             const tempDiv = document.createElement('div');
             const correctLevel = (typeof QRCode.CorrectLevel !== 'undefined') ? QRCode.CorrectLevel.M : 0;
 
@@ -57,68 +59,50 @@ function generateQRCodeArtifacts_(text, size = 240) {
 
             if (qr && qr._oQRCode && typeof qr._oQRCode.getModuleCount === 'function') {
                 const count = qr._oQRCode.getModuleCount();
-                const marginModules = 4; // Quiet zone standar ISO 18004
+                const marginModules = 2; // Quiet zone
                 const totalModules = count + (marginModules * 2);
-
-                // 1. BUAT VECTOR SVG (Pilihan Utama: 100% Vector, Mustahil Blank / Putih Polos!)
-                let path = '';
-                for (let r = 0; r < count; r++) {
-                    for (let c = 0; c < count; c++) {
-                        if (qr._oQRCode.isDark(r, c)) {
-                            path += `M${c + marginModules},${r + marginModules}h1v1h-1z `;
-                        }
-                    }
-                }
-
-                svgPortrait = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalModules} ${totalModules}" width="78" height="78" style="display:block;" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#ffffff"/><path d="${path}" fill="#000000"/></svg>`;
-                svgLandscape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalModules} ${totalModules}" width="66" height="66" style="display:block;" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#ffffff"/><path d="${path}" fill="#000000"/></svg>`;
-
-                // 2. BUAT CANVAS PNG DATA URL (Sebagai Kompatibilitas Cadangan)
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = qrDimension;
-                    canvas.height = qrDimension;
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        const cellSize = canvas.width / totalModules;
-                        ctx.fillStyle = '#000000';
-                        for (let r = 0; r < count; r++) {
-                            for (let c = 0; c < count; c++) {
-                                if (qr._oQRCode.isDark(r, c)) {
-                                    ctx.fillRect(
-                                        Math.round((c + marginModules) * cellSize),
-                                        Math.round((r + marginModules) * cellSize),
-                                        Math.ceil(cellSize),
-                                        Math.ceil(cellSize)
-                                    );
-                                }
+                const canvas = document.createElement('canvas');
+                canvas.width = qrDimension;
+                canvas.height = qrDimension;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, qrDimension, qrDimension);
+                    const cellSize = qrDimension / totalModules;
+                    ctx.fillStyle = '#000000';
+                    for (let r = 0; r < count; r++) {
+                        for (let c = 0; c < count; c++) {
+                            if (qr._oQRCode.isDark(r, c)) {
+                                ctx.fillRect(
+                                    Math.round((c + marginModules) * cellSize),
+                                    Math.round((r + marginModules) * cellSize),
+                                    Math.ceil(cellSize),
+                                    Math.ceil(cellSize)
+                                );
                             }
                         }
-                        dataUrl = canvas.toDataURL('image/png');
                     }
-                } catch (_) { }
+                    const du = canvas.toDataURL('image/png');
+                    if (du && du.length > 500 && !du.includes('data:,')) {
+                        return du;
+                    }
+                }
             }
         }
     } catch (err) {
-        console.warn('[QR Code Generator] Error:', err);
+        console.warn('[QR Code Generator] Local canvas error, fallback to QRServer:', err);
     }
 
-    if (!dataUrl) {
-        dataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`;
-    }
-
-    return {
-        dataUrl,
-        svg: svgPortrait,
-        svgLandscape: svgLandscape
-    };
+    return fallbackUrl;
 }
 
-async function generateQRCodeDataURL_(text, size = 240) {
-    const art = generateQRCodeArtifacts_(text, size);
-    return art.dataUrl;
+function generateQRCodeArtifacts_(text, size = 200) {
+    const dataUrl = generateQRCodeDataURL_(text, size);
+    return {
+        dataUrl: dataUrl,
+        svg: '',
+        svgLandscape: ''
+    };
 }
 
 function buildVerificationUrlForSiswa_(s, ctx) {
@@ -630,10 +614,10 @@ function buildBukuIndukPortraitHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                         <div style="float:right; text-align:center; width:90%; font-size: ${baseFs}; margin-top: 6px;">
                             ${escBI_(ctx.tempatCetak)}, ${escBI_(ctx.tglCetak)} <br>
                             Kepala Sekolah,<br>
-                            ${(cfg.signatureType !== 'manual' && (ctx.qrCodeSvg || ctx.qrCodeDataUrl)) ? `
+                            ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
                             <div style="margin: 3px auto 4px auto; text-align: center;">
                                 <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
-                                    ${ctx.qrCodeSvg ? ctx.qrCodeSvg : `<img src="${ctx.qrCodeDataUrl}" style="width: 78px; height: 78px; display: block;">`}
+                                    <img src="${ctx.qrCodeDataUrl}" crossorigin="anonymous" style="width: 78px; height: 78px; display: block; margin: 0 auto;" alt="QR TTE">
                                 </div>
                                 <div style="font-size: 6.2pt; color: #444; line-height: 1.15; margin-top: 2px;">
                                     Ditandatangani secara elektronik (TTE)<br>
@@ -980,10 +964,10 @@ function buildBukuIndukLandscapeHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                                 <div style="display: inline-block; text-align: center; min-width: 170px;">
                                     ${escBI_(ctx.tempatCetak)}, ${escBI_(ctx.tglCetak)}<br>
                                     Kepala Sekolah,<br>
-                                    ${(cfg.signatureType !== 'manual' && (ctx.qrCodeSvgLandscape || ctx.qrCodeSvg || ctx.qrCodeDataUrl)) ? `
+                                    ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
                                     <div style="margin: 2px auto 3px auto; text-align: center;">
                                         <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
-                                            ${ctx.qrCodeSvgLandscape ? ctx.qrCodeSvgLandscape : (ctx.qrCodeSvg ? ctx.qrCodeSvg : `<img src="${ctx.qrCodeDataUrl}" style="width: 66px; height: 66px; display: block;">`)}
+                                            <img src="${ctx.qrCodeDataUrl}" crossorigin="anonymous" style="width: 66px; height: 66px; display: block; margin: 0 auto;" alt="QR TTE">
                                         </div>
                                         <div style="font-size: 5.8pt; color: #444; line-height: 1.1; margin-top: 1px;">
                                             TTE: <b style="font-family: monospace; font-size: 5.8pt; color: #111;">${escBI_(ctx.tteCode || '')}</b>
@@ -1079,14 +1063,13 @@ async function renderBukuIndukToPreview_(ctx) {
         signatureType: cfg.signatureType || 'tte'
     });
 
-    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeSvg && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 500))) {
+    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 50)) {
         const verif = buildVerificationUrlForSiswa_(s, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        const art = generateQRCodeArtifacts_(verif.url, 240);
-        ctx.qrCodeDataUrl = art.dataUrl;
-        ctx.qrCodeSvg = art.svg;
-        ctx.qrCodeSvgLandscape = art.svgLandscape;
+        ctx.qrCodeDataUrl = generateQRCodeDataURL_(verif.url, 200);
+        ctx.qrCodeSvg = '';
+        ctx.qrCodeSvgLandscape = '';
     }
 
     updateBukuIndukPreviewSidebar_(cfg, s);
@@ -1159,10 +1142,9 @@ window.applyBukuIndukPreviewChange = async function () {
         const verif = buildVerificationUrlForSiswa_(ctx.siswa, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        const art = generateQRCodeArtifacts_(verif.url, 240);
-        ctx.qrCodeDataUrl = art.dataUrl;
-        ctx.qrCodeSvg = art.svg;
-        ctx.qrCodeSvgLandscape = art.svgLandscape;
+        ctx.qrCodeDataUrl = generateQRCodeDataURL_(verif.url, 200);
+        ctx.qrCodeSvg = '';
+        ctx.qrCodeSvgLandscape = '';
     }
     renderBukuIndukToPreview_(ctx);
 };
