@@ -120,7 +120,7 @@ function prosesCetakMassal(tipe, targetData, bagian) {
                     let judulKartux = isAlumnix ? 'KARTU ALUMNI' : 'KARTU PELAJAR';
                     let fotoSrc = fotoSources[i] || "";
 
-                    let qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=0&data=" + s[1];
+                    let qrUrl = generateQRCodeDataURL_(String(s[1] || ''), 100);
 
                     let bgStyle = res.bg1 ? `background-image: url('${res.bg1}'); display: block;` : `display: none;`;
                     let gradStyle = res.bg1 ? `display: none;` : `display: block;`;
@@ -175,7 +175,7 @@ function prosesCetakMassal(tipe, targetData, bagian) {
                 const mm = String(dateNow.getMonth() + 1).padStart(2, '0');
                 const yyyy = dateNow.getFullYear();
                 const qrBackData = `Kartu ini merupakan dokumen ${globalConf.nama_sekolah} yang sah dan ditandatangani secara elektronik oleh kepala sekolah : ${globalConf.nama_kepsek||'-'} - ${globalConf.nip_kepsek||'-'}. date : ${mm}/${yyyy}`;
-                const qrBackSrc = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=0&data=${encodeURIComponent(qrBackData)}`;
+                const qrBackSrc = generateQRCodeDataURL_(qrBackData, 100);
                 
                 const txtJudulBack = isAlumni ? 'KARTU IDENTITAS ALUMNI' : 'KARTU IDENTITAS PELAJAR';
                 let nmSekolah = (globalConf.nama_sekolah || 'sekolah ini').toUpperCase();
@@ -524,4 +524,3 @@ function bukaModalKlaper(tipe) {
 
     $('#mdlKlaper').modal('show');
 }
-
