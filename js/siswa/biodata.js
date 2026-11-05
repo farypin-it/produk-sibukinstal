@@ -38,63 +38,80 @@ function generateQRCodeDataURL_(text, size = 240) {
     return new Promise((resolve) => {
         try {
             if (typeof QRCode !== 'undefined') {
-                const tempDiv = document.createElement('div');
-                tempDiv.style.position = 'absolute';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.top = '-9999px';
-                document.body.appendChild(tempDiv);
-
                 const qrDimension = Math.max(size, 240);
+                const tempDiv = document.createElement('div');
                 const correctLevel = (typeof QRCode.CorrectLevel !== 'undefined') ? QRCode.CorrectLevel.M : 0;
 
-                new QRCode(tempDiv, {
+                const qr = new QRCode(tempDiv, {
                     text: text,
                     width: qrDimension,
                     height: qrDimension,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
                     correctLevel: correctLevel
                 });
 
-                setTimeout(() => {
-                    let dataUrl = '';
-                    const rawCanvas = tempDiv.querySelector('canvas');
-                    if (rawCanvas && rawCanvas.width > 0) {
-                        try {
-                            // Standar ISO QR Code: Berikan Quiet Zone (margin putih bersih 8%)
-                            // agar sensor kamera HP dapat mengunci 3 kotak sudut posisi dalam 0.1 detik
-                            const margin = Math.max(12, Math.round(qrDimension * 0.08));
-                            const borderedCanvas = document.createElement('canvas');
-                            borderedCanvas.width = qrDimension + (margin * 2);
-                            borderedCanvas.height = qrDimension + (margin * 2);
-                            const bCtx = borderedCanvas.getContext('2d');
-                            bCtx.fillStyle = '#ffffff';
-                            bCtx.fillRect(0, 0, borderedCanvas.width, borderedCanvas.height);
-                            bCtx.drawImage(rawCanvas, margin, margin, qrDimension, qrDimension);
-                            dataUrl = borderedCanvas.toDataURL('image/png');
-                        } catch (_) {
-                            try { dataUrl = rawCanvas.toDataURL('image/png'); } catch (_) { }
+                // 1. PRIORITAS UTAMA (100% Deterministik & Anti-Blank):
+                // Gambar langsung dari matriks bit modul boolean (_oQRCode).
+                // Menjamin tidak ada bug canvas display:none atau fillRect putih kosong!
+                if (qr && qr._oQRCode && typeof qr._oQRCode.getModuleCount === 'function') {
+                    const count = qr._oQRCode.getModuleCount();
+                    const marginModules = 4; // Quiet zone standar ISO (4 modul)
+                    const totalModules = count + (marginModules * 2);
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = qrDimension;
+                    canvas.height = qrDimension;
+                    const ctx = canvas.getContext('2d');
+
+                    if (ctx) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        const cellSize = canvas.width / totalModules;
+                        ctx.fillStyle = '#000000';
+
+                        for (let r = 0; r < count; r++) {
+                            for (let c = 0; c < count; c++) {
+                                if (qr._oQRCode.isDark(r, c)) {
+                                    const x = Math.round((c + marginModules) * cellSize);
+                                    const y = Math.round((r + marginModules) * cellSize);
+                                    const w = Math.ceil(cellSize);
+                                    const h = Math.ceil(cellSize);
+                                    ctx.fillRect(x, y, w, h);
+                                }
+                            }
+                        }
+
+                        const cleanDataUrl = canvas.toDataURL('image/png');
+                        if (cleanDataUrl && cleanDataUrl.length > 500) {
+                            return resolve(cleanDataUrl);
                         }
                     }
+                }
 
-                    if (!dataUrl) {
-                        const img = tempDiv.querySelector('img');
-                        if (img && img.src && img.src.startsWith('data:image')) {
-                            dataUrl = img.src;
+                // 2. PRIORITAS KEDUA: Raw canvas bawaan QRCode jika tersedia
+                const rawCanvas = tempDiv.querySelector('canvas');
+                if (rawCanvas && rawCanvas.width > 0) {
+                    try {
+                        const rawDataUrl = rawCanvas.toDataURL('image/png');
+                        if (rawDataUrl && rawDataUrl.length > 500) {
+                            return resolve(rawDataUrl);
                         }
-                    }
+                    } catch (_) { }
+                }
 
-                    try { document.body.removeChild(tempDiv); } catch (_) { }
-
-                    if (dataUrl) return resolve(dataUrl);
-
-                    // Fallback jika canvas lokal gagal
-                    resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`);
-                }, 80);
-                return;
+                // 3. PRIORITAS KETIGA: Tag <img> bawaan QRCode
+                const img = tempDiv.querySelector('img');
+                if (img && img.src && img.src.startsWith('data:image') && img.src.length > 500) {
+                    return resolve(img.src);
+                }
             }
-        } catch (_) { }
+        } catch (err) {
+            console.warn('[QR Code Generator] Local generator error:', err);
+        }
 
+        // 4. Fallback online resmi
         resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`);
     });
 }
@@ -1057,11 +1074,11 @@ async function renderBukuIndukToPreview_(ctx) {
         signatureType: cfg.signatureType || 'tte'
     });
 
-    if (cfg.signatureType !== 'manual' && !ctx.qrCodeDataUrl) {
+    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 500)) {
         const verif = buildVerificationUrlForSiswa_(s, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        ctx.qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 120);
+        ctx.qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
     }
 
     updateBukuIndukPreviewSidebar_(cfg, s);
@@ -1128,7 +1145,7 @@ window.applyBukuIndukPreviewChange = async function () {
     ctx.cfg.signatureType = useTte ? 'tte' : 'manual';
     if (!useTte) {
         ctx.qrCodeDataUrl = '';
-    } else if (!ctx.qrCodeDataUrl) {
+    } else {
         const verif = buildVerificationUrlForSiswa_(ctx.siswa, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
@@ -1340,7 +1357,7 @@ async function cetakPDF(nis) {
         const verif = buildVerificationUrlForSiswa_(s, { conf, tempatCetak, tglCetak, namaKepsek, nipKepsek });
         let qrCodeDataUrl = '';
         if (cfg.signatureType !== 'manual') {
-            qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 120);
+            qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
         }
 
         const ctx = {
@@ -1653,7 +1670,7 @@ async function prosesCetakBukuIndukKolektif_(targetStudents, targetInfo, tempatC
             const verif = buildVerificationUrlForSiswa_(s, { conf, tempatCetak, tglCetak, namaKepsek, nipKepsek });
             let qrCodeDataUrl = '';
             if (cfg.signatureType !== 'manual') {
-                qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 120);
+                qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
             }
 
             const ctx = {
