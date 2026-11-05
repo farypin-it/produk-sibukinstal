@@ -201,17 +201,29 @@ function buildVerificationUrlForSiswa_(s, ctx) {
         }
         parsed.pathname = path;
 
-        // PARAMETER RESMI TTE: HANYA NIS, NISN, TANGGAL LAHIR, DAN KODE TTE
-        // Sesuai instruksi: data nama panjang, kelas, ayah, jk TIDAK dimasukkan ke URL QR Code
-        // agar panjang URL hanya ~85-95 karakter dan QR Code tetap berukuran modul besar, renggang, dan 100% cepat di-scan.
+        // Keep student details minimal while including the configured school identity.
         parsed.searchParams.set('code', tteCode);
+        const schoolName = cleanValBI_(conf.nama_sekolah, '');
+        const institutionName = cleanValBI_(conf.nama_instansi, '');
+        if (schoolName) parsed.searchParams.set('sekolah', schoolName);
+        if (institutionName) parsed.searchParams.set('instansi', institutionName);
+        if (typeof tenantId !== 'undefined' && tenantId) parsed.searchParams.set('id', String(tenantId));
         if (nis) parsed.searchParams.set('nis', nis);
         if (nisn) parsed.searchParams.set('nisn', nisn);
         if (rawTglLahir) parsed.searchParams.set('tgl', rawTglLahir);
 
         targetUrl = parsed.toString();
     } catch (_) {
-        targetUrl = `${settingUrl.replace(/\/+$/, '')}/validasi.html?code=${encodeURIComponent(tteCode)}&nis=${encodeURIComponent(nis)}&nisn=${encodeURIComponent(nisn)}&tgl=${encodeURIComponent(rawTglLahir)}`;
+        const params = new URLSearchParams({
+            code: tteCode,
+            nis,
+            nisn,
+            tgl: rawTglLahir,
+            sekolah: cleanValBI_(conf.nama_sekolah, ''),
+            instansi: cleanValBI_(conf.nama_instansi, '')
+        });
+        if (typeof tenantId !== 'undefined' && tenantId) params.set('id', String(tenantId));
+        targetUrl = `${settingUrl.replace(/\/+$/, '')}/validasi.html?${params.toString()}`;
     }
 
     const payload = {
