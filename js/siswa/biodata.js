@@ -2950,14 +2950,15 @@ function tampilkanKartuKeModal(nama, nisn, ttl, jk, fotoId, status) {
     $('#card-jk').text(jk);
     $('#card-link-validasi').text(globalConf.link_validasi || "https://simisterbin.my.id");
 
-    // 3. QR Code pakai API luar agar terbaca sebagai gambar (Aman untuk didownload)
-    $('#qrcode').html(`<img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=0&data=${nisn}" crossorigin="anonymous" style="width:85px; height:85px; display:block;">`);
+    // Generate locally so card previews also work without an internet connection.
+    const qrCodeDataUrl = generateQRCodeDataURL_(String(nisn || ''), 100);
+    $('#qrcode').html(qrCodeDataUrl ? `<img src="${qrCodeDataUrl}" style="width:85px; height:85px; display:block;">` : '');
 
     const dateNow = new Date();
     const mm = String(dateNow.getMonth() + 1).padStart(2, '0');
     const yyyy = dateNow.getFullYear();
     const qrBackData = `Kartu ini merupakan dokumen ${globalConf.nama_sekolah} yang sah dan ditandatangani secara elektronik oleh kepala sekolah : ${globalConf.nama_kepsek || '-'} - ${globalConf.nip_kepsek || '-'}. date : ${mm}/${yyyy}`;
-    $('#qr-back-img').attr('src', `https://api.qrserver.com/v1/create-qr-code/?size=100x100&margin=0&data=${encodeURIComponent(qrBackData)}`);
+    $('#qr-back-img').attr('src', generateQRCodeDataURL_(qrBackData, 100));
 
     // Kosongkan gambar lama
     $('#card-foto').attr('src', '');
@@ -3063,4 +3064,3 @@ function cetakKartuAdmin(nis) {
 
     tampilkanKartuKeModal(d[2], d[1], d[5] + ', ' + formatTglIndoJS(d[6]), d[7] === 'L' ? 'Laki-laki' : 'Perempuan', fotoDipakai, d[31]);
 }
-
