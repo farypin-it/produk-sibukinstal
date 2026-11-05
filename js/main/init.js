@@ -58,7 +58,9 @@ async function initApp() {
             $('#setEmail').val(cachedConf.email_sekolah || '');
             $('#setNamaAdmin').val(cachedConf.nama_admin || '');
             $('#setWeb').val(cachedConf.web_sekolah || '');
-            $('#setLinkValidasi').val(cachedConf.link_validasi || '');
+            const cLink = cachedConf.link_validasi || localStorage.getItem('setting_link_validasi') || '';
+            $('#setLinkValidasi').val(cLink);
+            window.linkValidasiPublik = cLink;
             $('#setKepsek').val(cachedConf.nama_kepsek || cachedConf.kepala_sekolah || '');
             $('#setNip').val(cachedConf.nip_kepsek || '');
             $('#setTheme1').val(cachedConf.theme_color_1 || cachedConf.theme_color || '#4e73df');
@@ -1247,7 +1249,13 @@ async function loadSettings() {
         $('#setTheme2').val(s.theme_color_2 || '#224abe');
         $('#setTheme3').val(s.theme_color_3 || '#1a202c');
         $('#setOpd').val(s.opd_dinas || ''); $('#setTelp').val(s.telp_sekolah || ''); $('#setEmail').val(s.email_sekolah || ''); $('#setWeb').val(s.web_sekolah || '');
-        $('#setLinkValidasi').val(s.link_validasi || '');
+        const savedLink = s.link_validasi || localStorage.getItem('setting_link_validasi') || '';
+        $('#setLinkValidasi').val(savedLink);
+        window.linkValidasiPublik = savedLink;
+        if (savedLink) {
+            localStorage.setItem('setting_link_validasi', savedLink);
+            localStorage.setItem('link_validasi', savedLink);
+        }
         
         // Populate and lock username fields based on online settings
         const admU = s.username_admin || s.admin_user || s.adminUser || s.admin_username || s.user_admin || s.useradmin || s.adminusername;
@@ -1434,16 +1442,18 @@ function saveSettings(e) {
 // Handler Khusus: Simpan Link Validasi Publik dengan tombol sendiri
 window.saveLinkValidasiOnly = async function(e) {
     if (e && e.preventDefault) e.preventDefault();
-    const val = ($('#setLinkValidasi').val() || '').trim();
+    let val = ($('#setLinkValidasi').val() || '').trim();
 
+    // Otomatis tambahkan https:// jika pengguna belum menyertakan protokol
     if (val && !/^https?:\/\//i.test(val)) {
-        showCoolAlert('Format URL Keliru', 'URL link validasi harus diawali dengan https:// atau http://', 'warning');
-        return;
+        val = 'https://' + val;
+        $('#setLinkValidasi').val(val);
     }
 
     window.linkValidasiPublik = val;
     if (typeof localStorage !== 'undefined') {
         localStorage.setItem('setting_link_validasi', val);
+        localStorage.setItem('link_validasi', val);
     }
     if (typeof globalConf !== 'undefined' && globalConf) {
         globalConf.link_validasi = val;
@@ -1457,12 +1467,12 @@ window.saveLinkValidasiOnly = async function(e) {
         if (res && res.status === 'error') {
             showCoolAlert('Peringatan', res.message || 'Gagal menyimpan ke server online, namun tersimpan di lokal.', 'warning');
         } else {
-            showCoolAlert('Tersimpan', 'Link validasi publik berhasil disimpan.', 'success');
+            showCoolAlert('Tersimpan', 'Link validasi publik berhasil disimpan:<br><b>' + val + '</b>', 'success');
             if (typeof loadSettings === 'function') loadSettings();
         }
     } catch (err) {
         $('#loader').addClass('hidden');
-        showCoolAlert('Tersimpan Lokal', 'Link validasi publik tersimpan di perangkat ini.', 'info');
+        showCoolAlert('Tersimpan Lokal', 'Link validasi publik tersimpan di perangkat ini:<br><b>' + val + '</b>', 'info');
     }
 };
 
