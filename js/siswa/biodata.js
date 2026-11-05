@@ -32,88 +32,93 @@ function loadBukuIndukPrefs_() {
 }
 
 // ==========================================
-// FUNGSI GENERATOR QR CODE TTE & URL VALIDASI BUKU INDUK (ULTRA-SHARP & EASY SCAN)
+// FUNGSI GENERATOR QR CODE TTE (VECTOR SVG & ULTRA-SHARP CANVAS PNG)
+// 100% Deterministik, Anti-Blank, Bebas Ketergantungan Jaringan, Scannable
 // ==========================================
-function generateQRCodeDataURL_(text, size = 240) {
-    return new Promise((resolve) => {
-        try {
-            if (typeof QRCode !== 'undefined') {
-                const qrDimension = Math.max(size, 240);
-                const tempDiv = document.createElement('div');
-                const correctLevel = (typeof QRCode.CorrectLevel !== 'undefined') ? QRCode.CorrectLevel.M : 0;
+function generateQRCodeArtifacts_(text, size = 240) {
+    let dataUrl = '';
+    let svgPortrait = '';
+    let svgLandscape = '';
 
-                const qr = new QRCode(tempDiv, {
-                    text: text,
-                    width: qrDimension,
-                    height: qrDimension,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: correctLevel
-                });
+    try {
+        if (typeof QRCode !== 'undefined') {
+            const qrDimension = Math.max(size, 240);
+            const tempDiv = document.createElement('div');
+            const correctLevel = (typeof QRCode.CorrectLevel !== 'undefined') ? QRCode.CorrectLevel.M : 0;
 
-                // 1. PRIORITAS UTAMA (100% Deterministik & Anti-Blank):
-                // Gambar langsung dari matriks bit modul boolean (_oQRCode).
-                // Menjamin tidak ada bug canvas display:none atau fillRect putih kosong!
-                if (qr && qr._oQRCode && typeof qr._oQRCode.getModuleCount === 'function') {
-                    const count = qr._oQRCode.getModuleCount();
-                    const marginModules = 4; // Quiet zone standar ISO (4 modul)
-                    const totalModules = count + (marginModules * 2);
+            const qr = new QRCode(tempDiv, {
+                text: text,
+                width: qrDimension,
+                height: qrDimension,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: correctLevel
+            });
 
-                    const canvas = document.createElement('canvas');
-                    canvas.width = qrDimension;
-                    canvas.height = qrDimension;
-                    const ctx = canvas.getContext('2d');
+            if (qr && qr._oQRCode && typeof qr._oQRCode.getModuleCount === 'function') {
+                const count = qr._oQRCode.getModuleCount();
+                const marginModules = 4; // Quiet zone standar ISO 18004
+                const totalModules = count + (marginModules * 2);
 
-                    if (ctx) {
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                        const cellSize = canvas.width / totalModules;
-                        ctx.fillStyle = '#000000';
-
-                        for (let r = 0; r < count; r++) {
-                            for (let c = 0; c < count; c++) {
-                                if (qr._oQRCode.isDark(r, c)) {
-                                    const x = Math.round((c + marginModules) * cellSize);
-                                    const y = Math.round((r + marginModules) * cellSize);
-                                    const w = Math.ceil(cellSize);
-                                    const h = Math.ceil(cellSize);
-                                    ctx.fillRect(x, y, w, h);
-                                }
-                            }
-                        }
-
-                        const cleanDataUrl = canvas.toDataURL('image/png');
-                        if (cleanDataUrl && cleanDataUrl.length > 500) {
-                            return resolve(cleanDataUrl);
+                // 1. BUAT VECTOR SVG (Pilihan Utama: 100% Vector, Mustahil Blank / Putih Polos!)
+                let path = '';
+                for (let r = 0; r < count; r++) {
+                    for (let c = 0; c < count; c++) {
+                        if (qr._oQRCode.isDark(r, c)) {
+                            path += `M${c + marginModules},${r + marginModules}h1v1h-1z `;
                         }
                     }
                 }
 
-                // 2. PRIORITAS KEDUA: Raw canvas bawaan QRCode jika tersedia
-                const rawCanvas = tempDiv.querySelector('canvas');
-                if (rawCanvas && rawCanvas.width > 0) {
-                    try {
-                        const rawDataUrl = rawCanvas.toDataURL('image/png');
-                        if (rawDataUrl && rawDataUrl.length > 500) {
-                            return resolve(rawDataUrl);
+                svgPortrait = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalModules} ${totalModules}" width="78" height="78" style="display:block;" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#ffffff"/><path d="${path}" fill="#000000"/></svg>`;
+                svgLandscape = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalModules} ${totalModules}" width="66" height="66" style="display:block;" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#ffffff"/><path d="${path}" fill="#000000"/></svg>`;
+
+                // 2. BUAT CANVAS PNG DATA URL (Sebagai Kompatibilitas Cadangan)
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = qrDimension;
+                    canvas.height = qrDimension;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        const cellSize = canvas.width / totalModules;
+                        ctx.fillStyle = '#000000';
+                        for (let r = 0; r < count; r++) {
+                            for (let c = 0; c < count; c++) {
+                                if (qr._oQRCode.isDark(r, c)) {
+                                    ctx.fillRect(
+                                        Math.round((c + marginModules) * cellSize),
+                                        Math.round((r + marginModules) * cellSize),
+                                        Math.ceil(cellSize),
+                                        Math.ceil(cellSize)
+                                    );
+                                }
+                            }
                         }
-                    } catch (_) { }
-                }
-
-                // 3. PRIORITAS KETIGA: Tag <img> bawaan QRCode
-                const img = tempDiv.querySelector('img');
-                if (img && img.src && img.src.startsWith('data:image') && img.src.length > 500) {
-                    return resolve(img.src);
-                }
+                        dataUrl = canvas.toDataURL('image/png');
+                    }
+                } catch (_) { }
             }
-        } catch (err) {
-            console.warn('[QR Code Generator] Local generator error:', err);
         }
+    } catch (err) {
+        console.warn('[QR Code Generator] Error:', err);
+    }
 
-        // 4. Fallback online resmi
-        resolve(`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`);
-    });
+    if (!dataUrl) {
+        dataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=4&data=${encodeURIComponent(text)}`;
+    }
+
+    return {
+        dataUrl,
+        svg: svgPortrait,
+        svgLandscape: svgLandscape
+    };
+}
+
+async function generateQRCodeDataURL_(text, size = 240) {
+    const art = generateQRCodeArtifacts_(text, size);
+    return art.dataUrl;
 }
 
 function buildVerificationUrlForSiswa_(s, ctx) {
@@ -625,10 +630,10 @@ function buildBukuIndukPortraitHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                         <div style="float:right; text-align:center; width:90%; font-size: ${baseFs}; margin-top: 6px;">
                             ${escBI_(ctx.tempatCetak)}, ${escBI_(ctx.tglCetak)} <br>
                             Kepala Sekolah,<br>
-                            ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
+                            ${(cfg.signatureType !== 'manual' && (ctx.qrCodeSvg || ctx.qrCodeDataUrl)) ? `
                             <div style="margin: 3px auto 4px auto; text-align: center;">
                                 <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
-                                    <img src="${ctx.qrCodeDataUrl}" style="width: 78px; height: 78px; display: block; image-rendering: -webkit-optimize-contrast;">
+                                    ${ctx.qrCodeSvg ? ctx.qrCodeSvg : `<img src="${ctx.qrCodeDataUrl}" style="width: 78px; height: 78px; display: block;">`}
                                 </div>
                                 <div style="font-size: 6.2pt; color: #444; line-height: 1.15; margin-top: 2px;">
                                     Ditandatangani secara elektronik (TTE)<br>
@@ -975,10 +980,10 @@ function buildBukuIndukLandscapeHTML_(s, imgMasuk, imgKeluar, cfg, ctx) {
                                 <div style="display: inline-block; text-align: center; min-width: 170px;">
                                     ${escBI_(ctx.tempatCetak)}, ${escBI_(ctx.tglCetak)}<br>
                                     Kepala Sekolah,<br>
-                                    ${(cfg.signatureType !== 'manual' && ctx.qrCodeDataUrl) ? `
+                                    ${(cfg.signatureType !== 'manual' && (ctx.qrCodeSvgLandscape || ctx.qrCodeSvg || ctx.qrCodeDataUrl)) ? `
                                     <div style="margin: 2px auto 3px auto; text-align: center;">
                                         <div style="display: inline-block; background: #ffffff; padding: 3px; border: 1px solid #ccc; border-radius: 4px; line-height: 0;">
-                                            <img src="${ctx.qrCodeDataUrl}" style="width: 66px; height: 66px; display: block; image-rendering: -webkit-optimize-contrast;">
+                                            ${ctx.qrCodeSvgLandscape ? ctx.qrCodeSvgLandscape : (ctx.qrCodeSvg ? ctx.qrCodeSvg : `<img src="${ctx.qrCodeDataUrl}" style="width: 66px; height: 66px; display: block;">`)}
                                         </div>
                                         <div style="font-size: 5.8pt; color: #444; line-height: 1.1; margin-top: 1px;">
                                             TTE: <b style="font-family: monospace; font-size: 5.8pt; color: #111;">${escBI_(ctx.tteCode || '')}</b>
@@ -1074,11 +1079,14 @@ async function renderBukuIndukToPreview_(ctx) {
         signatureType: cfg.signatureType || 'tte'
     });
 
-    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 500)) {
+    if (cfg.signatureType !== 'manual' && (!ctx.qrCodeSvg && (!ctx.qrCodeDataUrl || ctx.qrCodeDataUrl.length < 500))) {
         const verif = buildVerificationUrlForSiswa_(s, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        ctx.qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
+        const art = generateQRCodeArtifacts_(verif.url, 240);
+        ctx.qrCodeDataUrl = art.dataUrl;
+        ctx.qrCodeSvg = art.svg;
+        ctx.qrCodeSvgLandscape = art.svgLandscape;
     }
 
     updateBukuIndukPreviewSidebar_(cfg, s);
@@ -1145,11 +1153,16 @@ window.applyBukuIndukPreviewChange = async function () {
     ctx.cfg.signatureType = useTte ? 'tte' : 'manual';
     if (!useTte) {
         ctx.qrCodeDataUrl = '';
+        ctx.qrCodeSvg = '';
+        ctx.qrCodeSvgLandscape = '';
     } else {
         const verif = buildVerificationUrlForSiswa_(ctx.siswa, ctx);
         ctx.tteCode = verif.tteCode;
         ctx.verifUrl = verif.url;
-        ctx.qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
+        const art = generateQRCodeArtifacts_(verif.url, 240);
+        ctx.qrCodeDataUrl = art.dataUrl;
+        ctx.qrCodeSvg = art.svg;
+        ctx.qrCodeSvgLandscape = art.svgLandscape;
     }
     renderBukuIndukToPreview_(ctx);
 };
@@ -1355,10 +1368,9 @@ async function cetakPDF(nis) {
         ]);
 
         const verif = buildVerificationUrlForSiswa_(s, { conf, tempatCetak, tglCetak, namaKepsek, nipKepsek });
-        let qrCodeDataUrl = '';
-        if (cfg.signatureType !== 'manual') {
-            qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
-        }
+        const qrArt = (cfg.signatureType !== 'manual')
+            ? generateQRCodeArtifacts_(verif.url, 240)
+            : { dataUrl: '', svg: '', svgLandscape: '' };
 
         const ctx = {
             siswa: s,
@@ -1371,7 +1383,9 @@ async function cetakPDF(nis) {
             tglCetak,
             namaKepsek,
             nipKepsek,
-            qrCodeDataUrl,
+            qrCodeDataUrl: qrArt.dataUrl,
+            qrCodeSvg: qrArt.svg,
+            qrCodeSvgLandscape: qrArt.svgLandscape,
             tteCode: verif.tteCode,
             verifUrl: verif.url,
             cfg
@@ -1668,10 +1682,9 @@ async function prosesCetakBukuIndukKolektif_(targetStudents, targetInfo, tempatC
             ]);
 
             const verif = buildVerificationUrlForSiswa_(s, { conf, tempatCetak, tglCetak, namaKepsek, nipKepsek });
-            let qrCodeDataUrl = '';
-            if (cfg.signatureType !== 'manual') {
-                qrCodeDataUrl = await generateQRCodeDataURL_(verif.url, 240);
-            }
+        const qrArt = (cfg.signatureType !== 'manual')
+            ? generateQRCodeArtifacts_(verif.url, 240)
+            : { dataUrl: '', svg: '', svgLandscape: '' };
 
             const ctx = {
                 siswa: s,
@@ -1684,8 +1697,10 @@ async function prosesCetakBukuIndukKolektif_(targetStudents, targetInfo, tempatC
                 tglCetak,
                 namaKepsek,
                 nipKepsek,
-                qrCodeDataUrl,
-                tteCode: verif.tteCode,
+                qrCodeDataUrl: qrArt.dataUrl,
+            qrCodeSvg: qrArt.svg,
+            qrCodeSvgLandscape: qrArt.svgLandscape,
+            tteCode: verif.tteCode,
                 verifUrl: verif.url,
                 cfg
             };
