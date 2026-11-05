@@ -129,8 +129,8 @@
             <div class="d-flex align-items-center justify-content-center gap-3 mb-2 flex-wrap">
                 <img id="logoInstansi" src="./icon.png" style="height: 52px; width: 52px; object-fit: contain;" alt="Logo Instansi">
                 <div class="text-center">
-                    <div class="small text-white-50 text-uppercase fw-bold letter-spacing-1" id="lblInstansi" style="letter-spacing: 1px;">KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI</div>
-                    <h5 class="fw-bold mb-0 text-white text-uppercase" id="lblSekolah">SISTEM BUKU INDUK SISWA DIGITAL</h5>
+                    <div class="small text-white-50 text-uppercase fw-bold letter-spacing-1" id="lblInstansi" style="letter-spacing: 1px;"></div>
+                    <h5 class="fw-bold mb-0 text-white text-uppercase" id="lblSekolah"></h5>
                 </div>
             </div>
             <div class="small text-white-50 mt-1" id="lblSlogan">Verifikasi Keaslian & Integritas Lembar Dokumen Buku Induk Siswa</div>
@@ -211,21 +211,13 @@
                     <i class="bi bi-patch-check-fill text-success fs-4"></i>
                     <div>
                         <div class="fw-bold text-dark" style="font-size: 0.95rem;">Tanda Tangan Elektronik (TTE) Sah</div>
-                        <div class="small text-muted" style="font-size: 0.8rem;">
-                            Dokumen lembar buku induk ini ditandatangani secara digital oleh Kepala Sekolah:
-                        </div>
+                        <div class="small text-muted" style="font-size: 0.8rem;" id="tteDescription"></div>
                     </div>
-                </div>
-
-                <div class="bg-white p-2 rounded border small mb-2">
-                    <div class="fw-bold text-dark" id="tteKepsek">-</div>
-                    <div class="text-secondary" id="tteNip">NIP. -</div>
-                    <div class="text-muted" style="font-size: 0.76rem;" id="tteTgl">Tanggal Terbit: -</div>
                 </div>
 
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-1">
                     <div class="small text-muted" style="font-size: 0.78rem;">
-                        Kode Unik Integritas TTE:
+                        Kode Unik Integrasi TTE:
                     </div>
                     <div class="code-pill" id="valTteCode">TTE-00000000</div>
                 </div>
@@ -315,18 +307,27 @@
                     status: urlParams.get('st') || urlParams.get('status') || 'Aktif',
                     ayah: urlParams.get('ayah') || '-',
                     code: code,
-                    sekolah: urlParams.get('sekolah') || (tenantId === 'sman15tebo' ? 'SMAN 15 TEBO' : tenantId.toUpperCase()),
-                    instansi: urlParams.get('instansi') || 'DINAS PENDIDIKAN / KEMENTERIAN PENDIDIKAN',
+                    sekolah: urlParams.get('sekolah') || '',
+                    instansi: urlParams.get('instansi') || '',
                     kepsek: urlParams.get('kepsek') || 'Kepala Sekolah',
                     nip: urlParams.get('nip') || 'NIP. -',
-                    tglCetak: rawTgl || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
                     foto: urlParams.get('foto') || ''
                 };
             }
 
             // Render Header
-            if (data.sekolah) document.getElementById('lblSekolah').textContent = data.sekolah;
-            if (data.instansi) document.getElementById('lblInstansi').textContent = data.instansi;
+            const namaSekolah = clean(urlParams.get('sekolah') || data.sekolah || (tenantId === 'sman15tebo' ? '' : tenantId.toUpperCase()), '');
+            const namaInstansi = clean(urlParams.get('instansi') || data.instansi, '');
+            if (namaSekolah) {
+                document.getElementById('lblSekolah').textContent = namaSekolah;
+                document.getElementById('tteDescription').textContent =
+                    `Dokumen lembar buku induk ini ditandatangani secara digital oleh Kepala Sekolah ${namaSekolah}.`;
+            } else {
+                document.getElementById('lblSekolah').textContent = 'Sekolah';
+                document.getElementById('tteDescription').textContent =
+                    'Dokumen lembar buku induk ini ditandatangani secara digital oleh Kepala Sekolah sekolah penerbit.';
+            }
+            if (namaInstansi) document.getElementById('lblInstansi').textContent = namaInstansi;
 
             // Render Profil Siswa
             const nama = clean(data.nama, 'Nama Siswa');
@@ -416,9 +417,6 @@
             }
 
             // TTE Box
-            document.getElementById('tteKepsek').textContent = clean(data.kepsek, 'Kepala Sekolah');
-            document.getElementById('tteNip').textContent = clean(data.nip, 'NIP. -');
-            document.getElementById('tteTgl').textContent = `Tanggal Penerbitan: ${clean(data.tglCetak, '-')}`;
             document.getElementById('valTteCode').textContent = clean(data.code || code, 'TTE-VALID');
 
             // Render Foto (jika ada data URL, Drive ID, atau link gambar eksternal)
@@ -448,4 +446,3 @@
     </script>
 </body>
 </html>
-
