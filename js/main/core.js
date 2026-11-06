@@ -15,6 +15,7 @@ const tenantConfig = {
     "sman19tebo": "https://script.google.com/macros/s/AKfycbx6YkigF-4fDvb5G_gD7Rq1kS08peRgXHp9Poh1_q2-y-aqrEIQxYQz9Nmf31ZXFIca/exec",
     "smkn1tebo": "https://script.google.com/macros/s/AKfycbw6WMBov4YsHwELoIZyZxZBYwFWhE_wkWPQXGylsCNrU03QtwXPqsl-UERszhZBkeRY/exec",
     "smkn2tebo": "https://script.google.com/macros/s/AKfycbz5dJIjry3slK-tEt1VU5APjGi2mSacXovWdXq_e7Fww1DXyswL6cbC8RbaRhKdj461/exec",
+    "smkn4tebo": "https://script.google.com/macros/s/AKfycbxwZW-aOfENN1P-c1IxFlPJVMUge-HAcvi-tELvn3Ch-oOIZ0dZ6LdCjcE2nuE77mc/exec",
     "slbntebo": "https://script.google.com/macros/s/AKfycbyqbdj7AnTv7ft_DaWwRZuDQMjkt7Yekvs7O8wwqghu5hCLYwMGwng7TgG5SknXzKcuYQ/exec",
     "sekolah1..": ""
     // Tambahkan sekolah lain di sini sesuai kebutuhan
